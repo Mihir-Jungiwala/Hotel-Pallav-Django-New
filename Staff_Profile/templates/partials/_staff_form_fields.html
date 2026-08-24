@@ -1,0 +1,129 @@
+{% comment %}
+Shared field set for Staff__Profile_User_Registration.html and
+Staff__Profile_User_Registration_Update.html. Pass `profile` (a
+User_Profile instance) to pre-fill for an update.
+{% endcomment %}
+
+<div class="space-y-8">
+  <section>
+    <h2 class="font-display text-lg font-bold text-pallav-900 mb-4">Personal Information</h2>
+    <div class="grid sm:grid-cols-2 gap-5">
+      <div>
+        <label for="full_name" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Full Name</label>
+        <input type="text" id="full_name" name="full_name" value="{{ profile.User_Full_Name }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="mobile_number" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Mobile Number</label>
+        <input type="text" id="mobile_number" name="mobile_number" value="{{ profile.User_Mobile_Number }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div class="sm:col-span-2">
+        <label for="address" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Address</label>
+        <input type="text" id="address" name="address" value="{{ profile.User_Address }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="date_of_birth" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Date of Birth</label>
+        <input type="date" id="date_of_birth" name="date_of_birth" value="{{ profile.User_Date_Of_Birth|date:'Y-m-d' }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="gender" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Gender</label>
+        <select id="gender" name="gender"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+          <option value="male" {% if profile.User_Gender == "male" %}selected{% endif %}>Male</option>
+          <option value="female" {% if profile.User_Gender == "female" %}selected{% endif %}>Female</option>
+          <option value="other" {% if profile.User_Gender == "other" %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="font-display text-lg font-bold text-pallav-900 mb-4">Work History</h2>
+    <div class="grid sm:grid-cols-2 gap-5">
+      <div>
+        <label for="job_title" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Job Title</label>
+        <input type="text" id="job_title" name="job_title" value="{{ profile.User_Job_Title }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="department" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Department</label>
+        <input type="text" id="department" name="department" value="{{ profile.User_Department }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="email_id" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Email</label>
+        <input type="email" id="email_id" name="email_id" value="{{ profile.User_Email_ID }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="country_and_pin_code" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Country &amp; Pin Code</label>
+        <input type="text" id="country_and_pin_code" name="country_and_pin_code" value="{{ profile.User_Country_And_Pin_Code }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="nationality" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Nationality</label>
+        <input type="text" id="nationality" name="nationality" value="{{ profile.User_Nationality }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="font-display text-lg font-bold text-pallav-900 mb-4">Education &amp; Skills</h2>
+    <div class="grid sm:grid-cols-2 gap-5">
+      <div>
+        <label for="qualification" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Qualification</label>
+        <input type="text" id="qualification" name="qualification" value="{{ profile.User_Qualification }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div>
+        <label for="institution" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Institution</label>
+        <input type="text" id="institution" name="institution" value="{{ profile.User_Qualification_Institution }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+      <div class="sm:col-span-2">
+        <label for="skills" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Skills</label>
+        <textarea id="skills" name="skills" rows="3"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">{{ profile.User_Skills }}</textarea>
+      </div>
+      <div>
+        <label for="salary" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Salary</label>
+        <input type="number" id="salary" name="salary" value="{{ profile.User_Salary }}"
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="font-display text-lg font-bold text-pallav-900 mb-4">Documents</h2>
+    <div class="grid sm:grid-cols-2 gap-5">
+      <div>
+        <label for="image" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Employee Photo</label>
+        <input type="file" id="image" name="image" accept="image/*"
+          class="w-full rounded-xl border border-dashed border-pallav-200 px-4 py-3 text-sm text-pallav-600 file:mr-3 file:rounded-lg file:border-0 file:bg-pallav-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-pallav-700 hover:file:bg-pallav-100 transition">
+        {% if profile.User_Image %}<p class="text-xs text-pallav-400 mt-1.5">Current: {{ profile.User_Image.name }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="resume_pdf" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Resume (PDF)</label>
+        <input type="file" id="resume_pdf" name="resume_pdf" accept=".pdf"
+          class="w-full rounded-xl border border-dashed border-pallav-200 px-4 py-3 text-sm text-pallav-600 file:mr-3 file:rounded-lg file:border-0 file:bg-pallav-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-pallav-700 hover:file:bg-pallav-100 transition">
+        {% if profile.User_Resume_PDF %}<p class="text-xs text-pallav-400 mt-1.5">Current: {{ profile.User_Resume_PDF.name }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="document_frontside_image" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">ID Document — Front</label>
+        <input type="file" id="document_frontside_image" name="document_frontside_image" accept="image/*"
+          class="w-full rounded-xl border border-dashed border-pallav-200 px-4 py-3 text-sm text-pallav-600 file:mr-3 file:rounded-lg file:border-0 file:bg-pallav-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-pallav-700 hover:file:bg-pallav-100 transition">
+        {% if profile.User_Document_Frontside_Image %}<p class="text-xs text-pallav-400 mt-1.5">Current: {{ profile.User_Document_Frontside_Image.name }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="document_backside_image" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">ID Document — Back</label>
+        <input type="file" id="document_backside_image" name="document_backside_image" accept="image/*"
+          class="w-full rounded-xl border border-dashed border-pallav-200 px-4 py-3 text-sm text-pallav-600 file:mr-3 file:rounded-lg file:border-0 file:bg-pallav-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-pallav-700 hover:file:bg-pallav-100 transition">
+        {% if profile.User_Document_Backside_Image %}<p class="text-xs text-pallav-400 mt-1.5">Current: {{ profile.User_Document_Backside_Image.name }}</p>{% endif %}
+      </div>
+    </div>
+  </section>
+</div>
