@@ -1,5 +1,11 @@
 # Deploying Hotel Pallav
 
+> Deploying to **Vercel**? Use `VERCEL_DEPLOYMENT.md` instead — Vercel is
+> serverless, so gunicorn/the `Procfile` below don't apply there, and
+> Postgres + S3 storage are mandatory rather than optional. This document
+> is for a traditional host (a VPS, Render, Railway, etc.) that runs
+> gunicorn as a long-lived process.
+
 This app is now set up to run behind a real WSGI server with production
 security settings, collected static files served by whitenoise, and
 optional Postgres/S3 backing — but every one of those is opt-in via

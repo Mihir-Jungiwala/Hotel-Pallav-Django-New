@@ -1122,3 +1122,84 @@ settings loaded: still 114/114 passing.
 
 ---
 
+## Vercel readiness pass
+
+The user decided to deploy on Vercel specifically, which is a serverless
+platform — different enough from the generic (VPS/Render/Railway-style)
+deployment above to need its own pass. Confirmed via Vercel's current
+docs (Django is now first-class supported: auto-detects `manage.py`,
+reads `WSGI_APPLICATION`, runs `collectstatic` automatically) rather than
+assumed from memory.
+
+### 🔒 Two things that were optional become mandatory on Vercel
+
+A Vercel Function's filesystem is ephemeral and mostly read-only, which
+turns two previously-optional production upgrades into hard requirements
+for this specific host:
+
+- **SQLite cannot be used at all** (not just "not recommended") — there
+  is nowhere for it to durably write.
+- **Local-disk media storage cannot be used at all** — staff photos,
+  resumes, and invoice scans written to `media/` would be lost (or fail
+  to write) between requests. `DJANGO_USE_S3` (already built in the
+  deployment-readiness pass above) must be turned on.
+
+Neither required a code change beyond what was already built — both are
+flagged prominently in the new `VERCEL_DEPLOYMENT.md` as mandatory setup
+steps, not optional ones, specifically for this host.
+
+### ⚙️ Added `DATABASE_URL` support (`dj-database-url`)
+
+Vercel automatically sets a `DATABASE_URL` connection-string env var when
+a Postgres integration (Vercel Postgres, Neon, Supabase) is attached to
+the project — a different convention from the discrete
+`DJANGO_DB_ENGINE`/`DJANGO_DB_NAME`/etc. vars already supported. Added
+`dj-database-url` and wired `DATABASE_URL` in as the first-checked option
+in `Main/settings.py`'s database block, falling back to the discrete-vars
+form, then SQLite for local dev. Verified by parsing a representative
+`postgres://user:pass@host:5432/db?sslmode=require` URL directly (correct
+`ENGINE`/`HOST`/`PORT`/`OPTIONS.sslmode` output) and by running
+`manage.py check`/`check --deploy` with `DATABASE_URL` set — both clean.
+
+### ⚙️ `vercel.json`
+
+Added with a `maxDuration: 30` for the `Main/wsgi.py` function entrypoint
+(Django's `WSGI_APPLICATION` already points there, matching what Vercel's
+auto-detection expects) — a safety margin above Vercel's short default
+timeout for heavier requests like the Dashboard's several aggregate
+queries.
+
+### 📝 `VERCEL_DEPLOYMENT.md`
+
+New Vercel-specific deploy doc, separate from the generic
+`DEPLOYMENT.md` (which is now explicitly cross-referenced from the top of
+both files so whichever one is opened first points to the right one).
+Covers: attaching Postgres, provisioning S3-compatible media storage
+(explicitly **not** Vercel Blob — there is no mainstream Django storage
+backend for it; use AWS S3 or an S3-compatible provider like Cloudflare
+R2 instead, which the existing `DJANGO_USE_S3` config already supports),
+the required env vars, why static files need no manual `collectstatic`
+step (Vercel runs it automatically and serves from its CDN — whitenoise
+stays active only for local `vercel dev`), why gunicorn/`Procfile` are
+irrelevant on this host, and running migrations via `vercel pull` since
+Vercel has no Heroku-style release-phase hook.
+
+**Known, unverified-from-here risk, flagged explicitly in
+`VERCEL_DEPLOYMENT.md`:** this app's dependencies include some heavier
+native packages (`lxml`, `Pillow`, `pyHanko`/`cryptography`, `reportlab`,
+`xhtml2pdf`). Vercel's standard Function bundle limit is 500 MB
+uncompressed. Likely fine, but this could not be measured without an
+actual Vercel deploy, which this environment cannot perform — watch the
+build output on the first real deploy.
+
+**Verification:** `manage.py check` and `manage.py check --deploy` both
+clean with `DATABASE_URL` set (Postgres-style, unreachable test host —
+confirms parsing and settings wiring, not an actual DB connection, which
+requires real Vercel-provisioned credentials this environment doesn't
+have). `vercel.json` validated as well-formed JSON. Full test suite
+re-run once more: still 114/114 passing, no regressions from the
+`DATABASE_URL` branch (tests still run against SQLite locally, since
+`DATABASE_URL` is unset in the test environment).
+
+---
+

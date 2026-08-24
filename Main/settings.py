@@ -132,15 +132,32 @@ WSGI_APPLICATION = 'Main.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 #
-# Defaults to SQLite for local development. In production, set
-# DJANGO_DB_ENGINE (e.g. 'django.db.backends.postgresql') plus
-# DJANGO_DB_NAME/DJANGO_DB_USER/DJANGO_DB_PASSWORD/DJANGO_DB_HOST/DJANGO_DB_PORT.
-# SQLite serializes writes at the file level and is not safe for a
-# multi-worker production deployment with concurrent bill/advance writes —
-# switching the engine here (plus installing the matching DB driver) is a
-# deployment-time decision, not something this codebase should hardcode.
+# Defaults to SQLite for local development. SQLite serializes writes at the
+# file level and is not safe for a multi-worker production deployment with
+# concurrent bill/advance writes — and on a serverless platform (Vercel and
+# similar) the filesystem is ephemeral, so SQLite cannot be used there at
+# all, not just "not recommended". Two ways to point at a real database in
+# production, checked in this order:
+#
+# 1. DATABASE_URL — a single connection-string env var, e.g.
+#    postgres://user:pass@host:5432/dbname?sslmode=require. This is what
+#    Vercel (and Heroku/Render) automatically set when you attach a
+#    Postgres integration (Vercel Postgres, Neon, Supabase, etc.) — no
+#    manual configuration needed beyond attaching the integration.
+# 2. DJANGO_DB_ENGINE (e.g. 'django.db.backends.postgresql') plus
+#    DJANGO_DB_NAME/DJANGO_DB_USER/DJANGO_DB_PASSWORD/DJANGO_DB_HOST/DJANGO_DB_PORT
+#    — for hosts that hand you discrete credentials instead of one URL.
 
-if os.environ.get('DJANGO_DB_ENGINE'):
+if os.environ.get('DATABASE_URL'):
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ['DATABASE_URL'],
+            conn_max_age=int(os.environ.get('DJANGO_DB_CONN_MAX_AGE', '60')),
+            ssl_require=os.environ.get('DJANGO_DB_SSL_REQUIRE', 'True') == 'True',
+        )
+    }
+elif os.environ.get('DJANGO_DB_ENGINE'):
     DATABASES = {
         'default': {
             'ENGINE': os.environ['DJANGO_DB_ENGINE'],

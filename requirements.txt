@@ -12,6 +12,9 @@ cryptography==44.0.0
 cssselect2==0.7.0
 diff-match-patch==20241021
 Django==5.1.5
+# Parses the DATABASE_URL env var Vercel (and Heroku/Render) auto-inject
+# when a Postgres integration is attached — see Main/settings.py.
+dj-database-url==3.1.2
 django-import-export==4.3.5
 django-simple-history==3.8.0
 # Optional S3-compatible media storage — only used when DJANGO_USE_S3=True
