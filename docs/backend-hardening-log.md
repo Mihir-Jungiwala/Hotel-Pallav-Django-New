@@ -1259,3 +1259,53 @@ not just against a passing local test suite.
 
 ---
 
+## 🐛 Fixed a second Vercel-only failure: 400 DisallowedHost on every request
+
+After the crash fix above, the user redeployed and got a clean `400 Bad
+Request` on every route instead of a crash — expected, since
+`ALLOWED_HOSTS` defaults to empty and `DEBUG` now defaults to `False`
+(per the "Deployment readiness pass" above), so Django's own
+`DisallowedHost` check correctly refused every request with an unknown
+`Host` header. This was flagged as a required manual step in
+`VERCEL_DEPLOYMENT.md`, but manual per-deployment configuration is worse
+UX than it needs to be, and — more importantly — fixing only
+`ALLOWED_HOSTS` would have immediately surfaced a **second**, not-yet-hit
+failure: every POST (starting with the login form itself) would then
+403 on Django's CSRF Origin check, since `CSRF_TRUSTED_ORIGINS` was
+equally unset.
+
+**Fix:** `Main/settings.py` now auto-detects Vercel's own domain and uses
+it for both `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`, using the
+`VERCEL_URL`, `VERCEL_PROJECT_PRODUCTION_URL`, and `VERCEL_BRANCH_URL`
+environment variables Vercel injects automatically at runtime (confirmed
+via Vercel's current System Environment Variables documentation, not
+assumed). This only fires when `DJANGO_ALLOWED_HOSTS`/
+`DJANGO_CSRF_TRUSTED_ORIGINS` were left unset — an explicit custom domain
+always takes full priority and disables the auto-detection for that
+variable entirely. A plain `*.vercel.app` deployment now needs zero host
+configuration; a custom domain still needs both variables set by hand
+(documented in the updated `VERCEL_DEPLOYMENT.md`).
+
+An earlier version of this fix had a real bug caught before pushing: the
+loop that adds each Vercel URL variable checked `if not ALLOWED_HOSTS`
+(the whole list) as its guard instead of "would this specific host
+already be in the list," so only the *first* matching Vercel variable
+ever got added — `VERCEL_PROJECT_PRODUCTION_URL` would never be reached
+if `VERCEL_URL` was already present, even though both are legitimate
+hostnames this deployment should accept. Fixed to track "were these
+unset before Vercel auto-detection ran" once, then append every
+non-duplicate matching host.
+
+**Verification:** with `VERCEL=1`, `VERCEL_URL`, and
+`VERCEL_PROJECT_PRODUCTION_URL` set to representative values, confirmed
+both auto-detected hosts land in `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS`
+(not just the first one) and a request with a matching `Host` header no
+longer 400s (redirects to login instead, the correct unauthenticated
+response). Separately confirmed that setting `DJANGO_ALLOWED_HOSTS`/
+`DJANGO_CSRF_TRUSTED_ORIGINS` explicitly (simulating a custom domain)
+results in *only* the custom domain being present — no Vercel URLs
+leak in when a real domain is configured. Full 114-test suite re-run
+once more: still 114/114 passing.
+
+---
+

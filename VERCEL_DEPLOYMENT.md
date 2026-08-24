@@ -58,13 +58,24 @@ deploy/cold start.
 
 ## 3. Set the remaining required environment variables
 
+`Main/settings.py` auto-detects Vercel's own domain (via the `VERCEL_URL`/
+`VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_BRANCH_URL` variables Vercel sets
+automatically) and uses it for both `ALLOWED_HOSTS` and
+`CSRF_TRUSTED_ORIGINS` when you haven't set those explicitly — so a plain
+`*.vercel.app` deployment works with no host configuration at all. You
+only need to set `DJANGO_ALLOWED_HOSTS`/`DJANGO_CSRF_TRUSTED_ORIGINS`
+yourself if you're serving from a **custom domain** (they're not
+detectable automatically), in which case setting either one disables the
+auto-detection entirely for that variable — set both together, not just
+one, once you do.
+
 In the Vercel dashboard, Project Settings → Environment Variables, set:
 
 - `DJANGO_SECRET_KEY` — generate with
   `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
-- `DJANGO_ALLOWED_HOSTS` — your Vercel domain(s), e.g.
-  `your-app.vercel.app,hotelpallav.example.com`
-- `DJANGO_CSRF_TRUSTED_ORIGINS` — e.g. `https://your-app.vercel.app`
+- `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` — only if using a
+  custom domain, e.g. `hotelpallav.example.com` /
+  `https://hotelpallav.example.com`
 - `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` — for password reset emails
 
 `DJANGO_DEBUG` should stay unset or `False` — Vercel is production, and

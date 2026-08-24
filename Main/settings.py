@@ -36,10 +36,31 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+
 if DEBUG and not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+# Vercel-specific fallback: only adds to DJANGO_ALLOWED_HOSTS/
+# DJANGO_CSRF_TRUSTED_ORIGINS when those env vars were left unset, so an
+# explicit custom domain always wins over this. VERCEL=1 and these URL vars
+# are set automatically by Vercel at runtime (not something this app has to
+# be told) — without this, every request 400s with DisallowedHost until
+# DJANGO_ALLOWED_HOSTS is set by hand, and every login/form POST then 403s
+# until DJANGO_CSRF_TRUSTED_ORIGINS is *also* set by hand, since Vercel puts
+# this app behind HTTPS on a different host than Django's own CSRF Origin
+# check expects by default.
+_allowed_hosts_were_unset = not ALLOWED_HOSTS
+_csrf_origins_were_unset = not CSRF_TRUSTED_ORIGINS
+if os.environ.get('VERCEL') == '1':
+    for _vercel_host_var in ('VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL'):
+        _vercel_host = os.environ.get(_vercel_host_var)
+        if not _vercel_host:
+            continue
+        if _allowed_hosts_were_unset and _vercel_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_vercel_host)
+        if _csrf_origins_were_unset and f'https://{_vercel_host}' not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(f'https://{_vercel_host}')
 
 if not DEBUG:
     # Hardened cookie/transport posture for production. A reverse proxy
