@@ -1,0 +1,95 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+  <div>
+    <label for="advance_receipt_number" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Advance Receipt Number</label>
+    <input type="text" id="advance_receipt_number" name="advance_Receipt_Number" value="{{ record.Advance_Receipt_Number|default:'' }}" {% if record %}readonly{% endif %}
+      class="w-full rounded-xl border border-pallav-100 {% if record %}bg-pallav-50/60 text-pallav-500{% else %}bg-white{% endif %} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+  <div>
+    <label for="advance_payment_date" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Date</label>
+    <input type="date" id="advance_payment_date" name="advance_Payment_Date" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+  <div>
+    <label for="advance_guest_name" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Guest Name</label>
+    <input type="text" id="advance_guest_name" name="advance_Guest_Name" value="{{ record.Advance_Guest_Name|default:'' }}" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+  <div>
+    <label for="advance_mobile_number" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Mobile Number</label>
+    <input type="text" id="advance_mobile_number" name="advance_Mobile_Number" value="{{ record.Advance_Mobile_Number|default:'' }}" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+  <div class="sm:col-span-2">
+    <label for="select_company" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Select Company</label>
+    <select id="select_company" name="select_company" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+      <option value="" disabled {% if not record %}selected{% endif %}>Select Company</option>
+      {% for company in companies %}
+        <option value="{{ company.id }}" {% if record and company.id == record.Advance_Bill_Company.id %}selected{% endif %}>{{ company.Company_Name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6 pt-6 border-t border-pallav-100">
+  <div class="rounded-xl bg-pallav-50/60 p-4">
+    <p class="text-xs font-bold uppercase tracking-wide text-pallav-600 mb-3">Hotel Pallav</p>
+    <div class="space-y-4">
+      <div>
+        <label for="hotel_amount" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Hotel Advance Amount</label>
+        <input type="text" id="hotel_amount" name="hotel_advance_amount" value="{{ record.Hotel_Advance_Amount|default:'' }}" class="w-full rounded-xl border border-pallav-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+      </div>
+      <div>
+        <label for="hotel_advance_mod" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Hotel Mode of Payment</label>
+        <select id="hotel_advance_mod" name="hotel_advance_mod" required class="w-full rounded-xl border border-pallav-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition disabled:opacity-50">
+          <option value="None" disabled {% if not record %}selected{% endif %}>Select Mode of Payment</option>
+          <option value="Cash" {% if record.Hotel_Advance_MOD == 'Cash' %}selected{% endif %}>Cash</option>
+          <option value=" Card" {% if record.Hotel_Advance_MOD == ' Card' %}selected{% endif %}> Card</option>
+          <option value="Debit " {% if record.Hotel_Advance_MOD == 'Debit ' %}selected{% endif %}>Debit </option>
+          <option value="Bank Transfer" {% if record.Hotel_Advance_MOD == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+          <option value="Cheque" {% if record.Hotel_Advance_MOD == 'Cheque' %}selected{% endif %}>Cheque</option>
+          <option value="UPI" {% if record.Hotel_Advance_MOD == 'UPI' %}selected{% endif %}>UPI</option>
+          {% if record %}<option value="None" {% if record.Hotel_Advance_MOD == 'None' %}selected{% endif %}>None</option>{% endif %}
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-xl bg-gold-50/60 p-4">
+    <p class="text-xs font-bold uppercase tracking-wide text-gold-700 mb-3">Pallav Food</p>
+    <div class="space-y-4">
+      <div>
+        <label for="food_amount" class="block text-xs font-bold text-gold-700/80 uppercase tracking-wide mb-1.5">Food Advance Amount</label>
+        <input type="text" id="food_amount" name="food_advance_amount" value="{{ record.Food_Advance_Amount|default:'' }}" class="w-full rounded-xl border border-gold-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-300 transition">
+      </div>
+      <div>
+        <label for="food_advance_mod" class="block text-xs font-bold text-gold-700/80 uppercase tracking-wide mb-1.5">Food Mode of Payment</label>
+        <select id="food_advance_mod" name="food_advance_mod" required class="w-full rounded-xl border border-gold-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-300 transition disabled:opacity-50">
+          <option value="None" disabled {% if not record %}selected{% endif %}>Select Mode of Payment</option>
+          <option value="Cash" {% if record.Food_Advance_MOD == 'Cash' %}selected{% endif %}>Cash</option>
+          <option value=" Card" {% if record.Food_Advance_MOD == ' Card' %}selected{% endif %}> Card</option>
+          <option value="Debit " {% if record.Food_Advance_MOD == 'Debit ' %}selected{% endif %}>Debit </option>
+          <option value="Bank Transfer" {% if record.Food_Advance_MOD == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+          <option value="Cheque" {% if record.Food_Advance_MOD == 'Cheque' %}selected{% endif %}>Cheque</option>
+          <option value="UPI" {% if record.Food_Advance_MOD == 'UPI' %}selected{% endif %}>UPI</option>
+          {% if record %}<option value="None" {% if record.Food_Advance_MOD == 'None' %}selected{% endif %}>None</option>{% endif %}
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-6">
+  <label for="total_amount" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Total Amount</label>
+  <input type="text" id="total_amount" name="total" readonly value="{{ record.Total|default:'' }}" class="w-full sm:w-64 rounded-xl border border-pallav-100 bg-pallav-50/60 text-pallav-800 font-mono font-bold px-4 py-2.5 text-sm">
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6 pt-6 border-t border-pallav-100">
+  <div>
+    <label for="advance_reference_name" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Reference Name</label>
+    <input type="text" id="advance_reference_name" name="advance_Reference_Name" value="{{ record.Advance_Reference_Name|default:'' }}" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+  <div>
+    <label for="advance_reference_mobile_number" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Reference Mobile Number</label>
+    <input type="text" id="advance_reference_mobile_number" name="advance_Reference_Mobile_Number" value="{{ record.Advance_Reference_Mobile_Number|default:'' }}" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+  <div class="sm:col-span-2">
+    <label for="advance_instruction" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Instruction</label>
+    <input type="text" id="advance_instruction" name="advance_Instruction" value="{{ record.Advance_Instruction|default:'' }}" class="w-full rounded-xl border border-pallav-100 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pallav-300 transition">
+  </div>
+</div>
