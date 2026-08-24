@@ -15,7 +15,11 @@ class Hotel_Cash_Withdrawal(models.Model):
     Withdrawal_Hotel_Full_Name = models.CharField(max_length=20, null=True)
 
     Withdrawal_Hotel_Withdrawer = models.CharField(max_length=100)
-    Withdrawal_Hotel_Amount = models.CharField(max_length=50)
+    # Was CharField(max_length=50) — see Revenue/models.py's
+    # Deposite_Hotel_Amount for the confirmed Sum() corruption this
+    # caused; same fix applied here since Dashboard.views also runs
+    # Sum('Withdrawal_Hotel_Amount').
+    Withdrawal_Hotel_Amount = models.DecimalField(max_digits=12, decimal_places=2)
     Withdrawal_Hotel_Amount_In_Words = models.CharField(max_length=250)
 
     
@@ -29,7 +33,7 @@ class Food_Cash_Withdrawal(models.Model):
     Withdrawal_Food_Full_Name = models.CharField(max_length=20, null=True)
 
     Withdrawal_Food_Withdrawer = models.CharField(max_length=100)
-    Withdrawal_Food_Amount = models.CharField(max_length=50)
+    Withdrawal_Food_Amount = models.DecimalField(max_digits=12, decimal_places=2)  # See Withdrawal_Hotel_Amount above
     Withdrawal_Food_Amount_In_Words = models.CharField(max_length=250)
 
 
@@ -42,7 +46,7 @@ class Hotel_Cash_Miscellaneous_Expenses(models.Model):
     Miscellaneous_Expenses_Hotel_Full_Name = models.CharField(max_length=20, null=True)
 
     Miscellaneous_Expenses_Hotel_Expense_Name = models.CharField(max_length=100)
-    Miscellaneous_Expenses_Hotel_Amount = models.CharField(max_length=50)
+    Miscellaneous_Expenses_Hotel_Amount = models.DecimalField(max_digits=12, decimal_places=2)  # See Withdrawal_Hotel_Amount above
     Miscellaneous_Expenses_Hotel_Instruction = models.CharField(max_length=500)
     Miscellaneous_Expenses_Hotel_Amount_In_Words = models.CharField(max_length=250)
 
@@ -56,7 +60,7 @@ class Food_Cash_Miscellaneous_Expenses(models.Model):
     Miscellaneous_Expenses_Food_Full_Name = models.CharField(max_length=20, null=True)
 
     Miscellaneous_Expenses_Food_Expense_Name = models.CharField(max_length=100)
-    Miscellaneous_Expenses_Food_Amount = models.CharField(max_length=50)
+    Miscellaneous_Expenses_Food_Amount = models.DecimalField(max_digits=12, decimal_places=2)  # See Withdrawal_Hotel_Amount above
     Miscellaneous_Expenses_Food_Instruction = models.CharField(max_length=500)
     Miscellaneous_Expenses_Food_Amount_In_Words = models.CharField(max_length=250)
 

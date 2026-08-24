@@ -635,3 +635,104 @@ test still 200s throughout.
 
 ---
 
+## Expense app — full pass
+
+This app is structurally Revenue's cousin (Hotel/Food withdrawal instead
+of deposit, plus Hotel/Food misc. expense and staff advance), and it
+turned out to carry the exact same bug classes, confirmed the same way,
+across five different record types.
+
+### 🐛 Same `Sum()` corruption as Revenue, across four fields
+
+`Withdrawal_Hotel_Amount`, `Withdrawal_Food_Amount`,
+`Miscellaneous_Expenses_Hotel_Amount`, `Miscellaneous_Expenses_Food_Amount`
+were all `CharField(max_length=50)`, and `Dashboard/views.py` runs
+`Sum()` over all four for the dashboard's expense totals — same
+mechanism, same silent corruption on any comma-formatted amount as
+Revenue's `Deposite_Hotel_Amount`. Fixed identically: migrated all four
+to `DecimalField(max_digits=12, decimal_places=2)` via
+`0008_normalize_amount_text_before_decimal` (data cleanup) then
+`0009_...` (the `AlterField`s). `Staff_Advance_amount` was already a
+proper `DecimalField` — untouched.
+
+### 🐛 Same ownership-comparison bug as Revenue, across five delete views
+
+`Hotel_Expense_Cash_Delete`, `Food_Expense_Cash_Delete`,
+`Hotel_Cash_Miscellaneous_Expense_Delete`,
+`Food_Cash_Miscellaneous_Expense_Delete`, and
+`Staff_Advance_Salaries_Delete` all had the identical
+`record.Username_Field != request.user.username` bug (User instance
+compared to a plain string, always `True`) — the true owner of any of
+these five record types could never delete their own entry. Fixed the
+same way as Revenue: compare `User` to `User`.
+
+(The three *Update* views' ownership checks were already correct —
+`record.Username_Field.username != request.user.username`, string to
+string — so only the five Delete views needed this particular fix.)
+
+### 🐛 Confirmed: updating a misc. expense or staff advance with a decimal amount crashed
+
+The Add views converted amounts via `int(float(amount_string))`
+(handles `"500.50"` fine); the three Update views used
+`int(amount_string)` directly, which raises `ValueError` for any
+non-integer string. Confirmed directly: `int('500.50')` crashes. So
+editing an existing record's amount to include cents always failed,
+even though creating one with cents worked fine. Both paths now go
+through the same `_parse_amount()` helper (shared with Revenue's
+approach), which returns a `Decimal` regardless of whether the input has
+a fractional part.
+
+### 🔒 Same impersonation gap and blank-time crash as Revenue, across the board
+
+Every Add view's `username` field is readonly/pre-filled for display,
+same cosmetic-only protection as Revenue and Shift_Handover — all five
+record types now always attribute to `request.user`, never a POSTed
+field. `Withdrawal_*_Time`/`Miscellaneous_Expenses_*_Time`/
+`Staff_Advance_time` are non-nullable `TimeField`s with the same
+blank-crashes-at-save-time issue as Revenue's `Deposite_Hotel_Time`; all
+five Add views (and by extension the amount/time validation shared with
+Update) now validate a non-blank time before touching the database.
+
+### 🔒 The three Update views' ownership-reassignment logic — closed the forgery vector, kept the original behavior
+
+`Hotel_Cash_Miscellaneous_Expense_Update` and
+`Food_Cash_Miscellaneous_Expense_Update` reassign the record's owner to
+whoever submitted the edit, *except* when the editor is SuperAdmin (who
+keeps the original owner). That reassignment previously read the target
+username from the same readonly-but-forgeable POST field as everywhere
+else. Since the form has always submitted `request.user.username`
+regardless, swapping the POSTed lookup for `request.user` directly
+changes no legitimate outcome — it only removes the ability to forge a
+different reassignment target. `Staff_Advance_Salaries_Update` had the
+same reassignment pattern but, notably, **no SuperAdmin exemption** —
+every edit (including by SuperAdmin) always reassigns ownership to the
+editor. That inconsistency with the other two Update views is
+pre-existing, not something introduced here; preserved it exactly rather
+than "fixing" it into consistency the original code never had, since
+that would be a behavior change nobody asked for. Only the identity
+source changed (POST field → `request.user`), not the reassignment logic
+itself.
+
+### 🔒 Debug prints replaced; dead `confirm_delete.html`/`error_template.html` references removed
+
+All five Delete views' non-POST branches previously rendered
+`confirm_delete.html` (never existed — same as Revenue); two Update
+views' `except ...DoesNotExist:` clauses referenced `error_template.html`
+(also never existed, and were dead code regardless: `get_object_or_404`
+raises `Http404`, never the model's own `DoesNotExist`, so those except
+clauses could never fire in the first place). Both replaced with working
+redirects/logging as part of the general rewrite — no template gets
+fabricated, since neither branch is reachable from the actual UI (every
+delete action is a POST-only form, and the DoesNotExist clauses were
+provably unreachable code).
+
+**Verification:** `manage.py check` clean; both migrations applied
+cleanly to the seeded preview DB; 12 tests in `Expense/tests.py` covering
+the `Sum()` fix, the ownership-comparison fix (with a GET-doesn't-crash
+check), the impersonation fix, and the decimal-amount-on-Update crash
+reproduction and fix, across withdrawals, misc. expenses, and staff
+advances. All five PDF receipt templates verified via direct rendering.
+Full cross-app smoke test still 200s throughout.
+
+---
+
