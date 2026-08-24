@@ -968,3 +968,91 @@ re-run together: **114 tests, all passing, no regressions.**
 
 ---
 
+## Final review pass — summary
+
+Every app declared in `Main/settings.py`'s `EXTERNAL_APPS` has now been
+hardened app-by-app, verified, and documented above: Authentication,
+Company, Staff_Profile, Shift_Handover, Revenue, Expense, Bill_Master,
+Dashboard, Reports. Nothing was skipped.
+
+**Final verification, run fresh at the end of the whole pass:**
+
+- `manage.py check` — clean, 0 issues.
+- All migrations applied cleanly to a **brand-new, empty** SQLite database
+  (not the reused seeded preview DB) — confirms a fresh install works, not
+  just an incrementally-patched one.
+- `manage.py makemigrations --check --dry-run` — no missing migrations;
+  every model change made during this pass has a committed migration.
+- Codebase-wide grep across all 9 hardened apps' `views.py` for leftover
+  `print()` debug statements, bare root-`logging.*` calls (as opposed to
+  each app's own named logger), and bare `except:` clauses — **zero
+  matches**. Every exception handler names its exception type or falls
+  through to a general `except Exception`, and every log line goes
+  through the app's configured logger.
+- Full test suite, all 9 apps together: **114 tests, 0 failures.**
+- Full smoke test hitting every list/add page across all 9 apps as a
+  logged-in user (23 pages: Dashboard, Revenue ×3, Expense ×6,
+  Shift_Handover ×2, Bill_Master ×6, Company ×2, Staff_Profile ×2,
+  Reports, Registration) — **all 23 return 200.**
+
+**Test coverage added this pass, by app:**
+
+| App | Tests |
+|---|---|
+| Authentication | 31 |
+| Company | 16 |
+| Staff_Profile | 17 |
+| Shift_Handover | 12 |
+| Revenue | 11 |
+| Expense | 12 |
+| Bill_Master | 11 |
+| Dashboard | 3 |
+| Reports | 1 |
+| **Total** | **114** |
+
+**Confirmed calculation/correctness bugs fixed this pass** (each verified
+by direct reproduction before being fixed — see each app's section above
+for the full reproduction and fix):
+
+1. Revenue: `Sum()` over `CharField` money fields silently truncated
+   comma-formatted amounts (e.g. `'1,500'` summed as `1`).
+2. Expense: the same `Sum()`/`CharField` bug across 4 amount fields.
+3. Revenue & Expense: `User` instance compared to `request.user.username`
+   (a string) in every Delete view's ownership check — always `False`,
+   so no one could ever delete their own record.
+4. Shift_Handover: cash-count denomination totals trusted from
+   client-submitted (readonly-but-forgeable) form fields instead of
+   being recomputed server-side.
+5. Bill_Master: the audit's originally-flagged copy-paste bug — food
+   advance balance computed using the hotel total instead of the food
+   total.
+6. Bill_Master: a second copy-paste bug — bill update's food balance
+   decided by the hotel's mode of payment instead of the food's.
+7. Bill_Master: all 8 debit-installment amount fields silently
+   discarded real values (stored as 0) whenever the first installment
+   was left blank, because every guard checked the base field instead
+   of its own field.
+8. Bill_Master: three `Total` fields (advance add/update/refund) trusted
+   directly from client POST data instead of being derived from the
+   amounts actually saved.
+9. Dashboard: "today's income" summed only the base debit-installment
+   amount field, silently excluding cash payments recorded against
+   installments 2, 3, or 4.
+
+**Known, deliberately-unfixed gap** (documented for visibility, not
+guessed at): `Bill_Master_Bill_Add`/`Bill_Master_Bill_Update`'s hotel/food
+bill totals are still computed client-side (JS) and trusted from POST.
+The real formula is asymmetric and domain-specific (12% GST, cross-
+allocated plan/laundry amounts between hotel and food) and reimplementing
+it server-side without a domain-authoritative spec risked making it
+*less* accurate. See the Bill_Master section above for the full
+reasoning.
+
+**Every commit pushed this pass**, in order:
+`3e31996` (settings + log setup) → `a53634d` (Authentication) →
+`7955400` (Company) → `a543a4d` (Staff_Profile) → `a73719c`
+(Shift_Handover) → `d0ab352` (Revenue) → `06c175b` (Expense) →
+`743d9a1` (Bill_Master) → `9d6d76f` (Reports + Dashboard).
+
+---
+
