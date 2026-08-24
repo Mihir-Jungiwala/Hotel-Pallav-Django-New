@@ -65,9 +65,27 @@
   .admin-fade-in{ animation:adminFadeIn .45s cubic-bezier(.22,.9,.28,1) backwards; }
   .rv{ opacity:0; transform:translateY(18px); transition:opacity .6s cubic-bezier(.22,.9,.28,1), transform .6s cubic-bezier(.22,.9,.28,1); }
   .rv.in{ opacity:1; transform:none; }
+  .rv.d1.in{ transition-delay:.06s } .rv.d2.in{ transition-delay:.12s }
+  .rv.d3.in{ transition-delay:.18s } .rv.d4.in{ transition-delay:.24s }
+
+  /* Table rows stagger in once their card has revealed */
+  .rv-rows tbody tr{ opacity:0; transform:translateY(6px); transition:opacity .45s ease, transform .45s ease; }
+  .rv-rows.in tbody tr{ opacity:1; transform:none; }
+  .rv-rows.in tbody tr:nth-child(1){ transition-delay:.03s } .rv-rows.in tbody tr:nth-child(2){ transition-delay:.06s }
+  .rv-rows.in tbody tr:nth-child(3){ transition-delay:.09s } .rv-rows.in tbody tr:nth-child(4){ transition-delay:.12s }
+  .rv-rows.in tbody tr:nth-child(5){ transition-delay:.15s } .rv-rows.in tbody tr:nth-child(6){ transition-delay:.18s }
+  .rv-rows.in tbody tr:nth-child(n+7){ transition-delay:.2s }
+
+  /* Ambient floating orbs — used sparingly (Dashboard hero only), matching hotelpallav.in's motion language */
+  @keyframes pallavDrift{ 0%,100%{ transform:translate(0,0) scale(1); } 33%{ transform:translate(24px,-18px) scale(1.07); } 66%{ transform:translate(-16px,14px) scale(.96); } }
+  .pallav-orb{ animation:pallavDrift 11s ease-in-out infinite; }
+
+  /* Number count-up (Dashboard stat tiles) */
+  .count-up{ font-variant-numeric: tabular-nums; }
+
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{ animation-duration:.001ms !important; transition-duration:.001ms !important; animation-iteration-count:1 !important; }
-    .rv{ opacity:1; transform:none; }
+    .rv, .rv-rows tbody tr{ opacity:1; transform:none; }
   }
 </style>
 
@@ -182,14 +200,38 @@
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Scroll/entrance reveal — .rv-rows shares the same 'in' toggle to stagger its <tr> children too
+  if (!reduceMotion) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
     }, { threshold: .12 });
-    document.querySelectorAll('.rv').forEach(el => io.observe(el));
+    document.querySelectorAll('.rv, .rv-rows').forEach(el => io.observe(el));
   } else {
-    document.querySelectorAll('.rv').forEach(el => el.classList.add('in'));
+    document.querySelectorAll('.rv, .rv-rows').forEach(el => el.classList.add('in'));
   }
+
+  // Count-up on stat numbers: <span class="count-up" data-count-to="18450">0</span>
+  function runCountUp(el) {
+    const target = parseFloat(el.dataset.countTo);
+    if (isNaN(target)) return;
+    const decimals = el.dataset.countDecimals ? parseInt(el.dataset.countDecimals) : 0;
+    const prefix = el.dataset.countPrefix || '';
+    if (reduceMotion) { el.textContent = prefix + target.toLocaleString('en-IN', {minimumFractionDigits: decimals, maximumFractionDigits: decimals}); return; }
+    const duration = 900, start = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = prefix + (target * eased).toLocaleString('en-IN', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  const countIo = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { runCountUp(e.target); countIo.unobserve(e.target); } });
+  }, { threshold: .5 });
+  document.querySelectorAll('.count-up').forEach(el => countIo.observe(el));
 </script>
 {% block extra_js %}{% endblock %}
 </body>
