@@ -1,8 +1,11 @@
 from django.shortcuts import render
 from datetime import datetime
+import logging
 import pytz
 from django.contrib.auth.decorators import login_required
 from Bill_Master.models import Bill_Master_ADD_Advance, Bill_Master_ADD_Bill
+
+logger = logging.getLogger(__name__)
 
 @login_required(login_url='Login_In')
 def Reports_Profile(request):
@@ -28,5 +31,5 @@ def Reports_Profile(request):
         return render(request, "Reports.html", context)
     
     except Exception as e:
-        print(e)
+        logger.error(f'Error fetching reports: {e}')
         return render(request, "error_page.html", {'error_message': 'An error occurred while fetching user profiles. Please try again later.'})

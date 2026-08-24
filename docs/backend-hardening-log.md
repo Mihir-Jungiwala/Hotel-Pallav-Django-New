@@ -897,3 +897,74 @@ every Bill_Master list/add page still returns 200.
 
 ---
 
+## Reports + Dashboard app — full pass
+
+Both apps are small and mostly read-only reporting views (`Reports/views.py`
+is 33 lines, `Dashboard/views.py` is 137 lines before this pass) — no
+ownership model, no forms that mutate data, so the bug classes fixed in
+every other app (impersonation, CharField `Sum()` corruption, ownership
+comparisons) don't apply here. What this pass found is a real
+under-counting bug in the dashboard's daily income calculation, plus the
+usual missing-error-handling and debug-print cleanup.
+
+### 🐛 CONFIRMED: dashboard's "today's income" undercounted multi-installment debit settlements
+
+`Bill_Master_ADD_Bill` supports up to 5 settlement installments per debit
+bill (the base fields plus `_1` through `_4`, each with its own date and
+its own mode of payment — see the Bill_Master hardening section above,
+`Bill_Master_Debit_Bill_Add`). `Dashboard_Profile`'s "today's hotel/food
+income" figures only summed the **base** installment's amount field:
+
+```python
+total_debit_hotel_amount = Bill_Master_ADD_Bill.objects.filter(
+    Bill_Master_Debit_Bill_Date=current_date,
+    Bill_Master_Debit_Hotel_Mode_Of_Payment__iexact='cash'
+).aggregate(total=Sum('Bill_Master_Debit_Hotel_Amount'))['total'] or 0
+```
+
+A cash payment recorded against installment 2, 3, or 4 today was
+completely invisible to the dashboard — the daily hotel/food income
+totals, and therefore `hotel_balance`/`food_balance`, were silently too
+low on any day a later installment was settled. Confirmed by direct
+reproduction: a bill with its base installment dated 5 days ago and its
+3rd installment (₹777, Cash) dated today showed the dashboard's
+`total_hotel_income` excluding that ₹777 before the fix.
+
+Fixed with a new `_debit_cash_income_for_date()` helper that sums cash
+income across all 5 installment slots (base + `_1..._4`) for both hotel
+and food. Covered by
+`DashboardDebitInstallmentIncomeTests.test_later_installment_counted_in_hotel_income`
+and `.test_later_installment_counted_in_food_income`.
+
+(The `debit_hotel_bills`/`debit_food_bills` querysets further down the
+same view — used only to *count* outstanding debit bills — are unaffected:
+they filter on `Bill_Master_Bill_Date`, the bill's original creation
+date, and just `.count()` the queryset rather than summing an
+installment amount, so there's no equivalent multi-slot gap there.)
+
+### 🔒 `Dashboard_Profile` had no error handling at all
+
+Every other view in the codebase wraps its logic in `try/except` and
+falls back to a friendly `error_page.html` render. `Dashboard_Profile` —
+which is the landing page shown immediately after every login — had
+none: any query failure (a locked SQLite file, a bad migration state, a
+future edge case) would have taken down the first page every single user
+sees with a raw, un-styled 500 error. Wrapped in the same
+try/except-and-log-and-render-friendly-page pattern used everywhere
+else. Covered by `DashboardResilienceTests.test_dashboard_loads_with_no_data`.
+
+### 🔒 Debug print replaced with the app's logger
+
+`Reports_Profile`'s `except Exception as e: print(e)` replaced with
+`logger.error(...)` (no logger existed in this file before; added
+`logging.getLogger(__name__)`), consistent with every other app.
+
+**Verification:** `manage.py check` clean. 4 new tests (2 in
+`Dashboard/tests.py` for the installment-income fix, 1 for dashboard
+resilience, 1 in `Reports/tests.py` for a basic page-load check) — all
+passing. Full cross-app suite (Authentication, Company, Staff_Profile,
+Shift_Handover, Revenue, Expense, Bill_Master, Dashboard, Reports)
+re-run together: **114 tests, all passing, no regressions.**
+
+---
+
