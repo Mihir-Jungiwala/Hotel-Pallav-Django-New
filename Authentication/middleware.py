@@ -49,37 +49,45 @@ class SuperAdminOnlyMiddleware:
 
 
 class AutoLogoutMiddleware:
+    """Enforces a 10-minute inactivity timeout and stamps the user's last
+    activity time on every request.
+
+    Hardening notes (see docs/backend-hardening-log.md):
+    - The record is fetched once per request and reused for both the
+      timeout check and the post-response stamp, instead of two separate
+      queries — halves the DB round-trips this middleware makes per
+      authenticated request.
+    - The activity-time write is throttled to once every ACTIVITY_WRITE_
+      THROTTLE_SECONDS: under normal browsing (rapid page-to-page
+      navigation) this cuts write volume substantially without weakening
+      the 10-minute timeout, since the timeout window is far larger than
+      the throttle window.
+    """
+
+    ACTIVITY_WRITE_THROTTLE_SECONDS = 30
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # If the user is authenticated
-        if request.user.is_authenticated:
-            try:
-                # Get the latest authentication record for the user
-                auth_record = Authentication.objects.filter(user=request.user).order_by('-activity_time').first()
+        auth_record = None
 
-                if auth_record:
-                    # Calculate the time difference since the last activity
-                    time_since_last_activity = timezone.now() - auth_record.activity_time
-
-                    # If the user has been inactive for more than 10 minutes, log them out
-                    if time_since_last_activity.total_seconds() > 600:  # 10 minutes in seconds
-                        logout(request)
-                        return redirect('Login_In')  # Redirect to login page or another appropriate view
-
-            except Authentication.DoesNotExist:
-                pass  # No activity record found, continue with the request
-
-        # Process the request
-        response = self.get_response(request)
-
-        # Update the activity time in the auth record
         if request.user.is_authenticated:
             auth_record = Authentication.objects.filter(user=request.user).order_by('-activity_time').first()
+
             if auth_record:
-                auth_record.activity_time = timezone.now()
-                auth_record.save()
+                time_since_last_activity = timezone.now() - auth_record.activity_time
+                if time_since_last_activity.total_seconds() > 600:  # 10 minutes
+                    logout(request)
+                    return redirect('Login_In')
+
+        response = self.get_response(request)
+
+        if request.user.is_authenticated and auth_record:
+            now = timezone.now()
+            if (now - auth_record.activity_time).total_seconds() >= self.ACTIVITY_WRITE_THROTTLE_SECONDS:
+                auth_record.activity_time = now
+                auth_record.save(update_fields=['activity_time'])
 
         return response
 

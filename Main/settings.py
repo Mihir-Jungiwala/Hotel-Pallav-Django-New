@@ -18,16 +18,41 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+# Environment-driven settings. In production, set DJANGO_SECRET_KEY,
+# DJANGO_DEBUG=False and DJANGO_ALLOWED_HOSTS in the deployment environment.
+# The fallbacks below only apply when those variables are unset, and are
+# safe defaults for local development only.
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-n)-ur$w5bcd(-=-gb=kxs#k#$=o2b+dciy=e)af*s*58830z62'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-n)-ur$w5bcd(-=-gb=kxs#k#$=o2b+dciy=e)af*s*58830z62',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+if DEBUG and not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+
+if not DEBUG:
+    # Hardened cookie/transport posture for production. A reverse proxy
+    # terminating TLS in front of this app must also forward
+    # X-Forwarded-Proto, hence SECURE_PROXY_SSL_HEADER below.
+    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True') == 'True'
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = False  # Django's CSRF token must be readable by JS for AJAX submissions.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 
 # Application definition
@@ -98,13 +123,37 @@ WSGI_APPLICATION = 'Main.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+#
+# Defaults to SQLite for local development. In production, set
+# DJANGO_DB_ENGINE (e.g. 'django.db.backends.postgresql') plus
+# DJANGO_DB_NAME/DJANGO_DB_USER/DJANGO_DB_PASSWORD/DJANGO_DB_HOST/DJANGO_DB_PORT.
+# SQLite serializes writes at the file level and is not safe for a
+# multi-worker production deployment with concurrent bill/advance writes —
+# switching the engine here (plus installing the matching DB driver) is a
+# deployment-time decision, not something this codebase should hardcode.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('DJANGO_DB_ENGINE'):
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ['DJANGO_DB_ENGINE'],
+            'NAME': os.environ.get('DJANGO_DB_NAME', 'hotel_pallav'),
+            'USER': os.environ.get('DJANGO_DB_USER', ''),
+            'PASSWORD': os.environ.get('DJANGO_DB_PASSWORD', ''),
+            'HOST': os.environ.get('DJANGO_DB_HOST', ''),
+            'PORT': os.environ.get('DJANGO_DB_PORT', ''),
+            'CONN_MAX_AGE': int(os.environ.get('DJANGO_DB_CONN_MAX_AGE', '60')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+            # Give concurrent requests time to wait for the write lock
+            # instead of raising "database is locked" immediately.
+            'OPTIONS': {'timeout': 20},
+        }
+    }
 
 
 # Password validation
@@ -164,3 +213,79 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # collectstatic must never sweep guest documents into the static bundle.
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
+
+
+# Logging
+# https://docs.djangoproject.com/en/5.0/topics/logging/
+#
+# Every app logger below writes through the app's own name (e.g.
+# logging.getLogger(__name__) inside Bill_Master/views.py resolves to the
+# 'Bill_Master' logger via propagation), so failures are attributable to a
+# specific module instead of vanishing into stdout via bare print(e) calls.
+
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {name} {module}.{funcName}:{lineno} — {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {name} — {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple' if DEBUG else 'verbose',
+            'level': 'DEBUG' if DEBUG else 'INFO',
+        },
+        'app_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'app.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'error.log',
+            'maxBytes': 10 * 1024 * 1024,
+            'backupCount': 10,
+            'formatter': 'verbose',
+            'level': 'ERROR',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'app_file', 'error_file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'app_file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'error_file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        # One logger per app so a grep of logs/app.log or logs/error.log
+        # for "Bill_Master" (etc.) isolates that app's activity.
+        **{
+            app_name: {
+                'handlers': ['console', 'app_file', 'error_file'],
+                'level': 'INFO',
+                'propagate': False,
+            }
+            for app_name in EXTERNAL_APPS
+        },
+    },
+}
