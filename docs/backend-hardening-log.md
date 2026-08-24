@@ -459,3 +459,91 @@ isn't just "never touch files again"). Full cross-app smoke test still
 
 ---
 
+## Shift_Handover app — full pass
+
+This app tracks cash-count reconciliation at shift changeover — real
+money accounting, so the two fixes below are the most consequential in
+this pass so far after Authentication's privilege escalation.
+
+### 🐛 The server never verified the cash-count arithmetic — took the client's numbers as-is
+
+`Shift_Handover_Add.html` computes each denomination's amount
+(`quantity × face value`) and the grand total in JavaScript
+(`calculateAmount`/`calculateTotal`) purely for the live on-screen
+display, and marks those `<input>` fields `readonly`. But `readonly` is
+a client-side HTML attribute only — it does nothing to what a raw POST
+request can contain. The view took `five_hundred_amount`, `total`, etc.
+directly from `request.POST` and stored them as submitted, with **no
+server-side check that amount actually equals quantity × denomination,
+or that total actually equals the sum of the eight line amounts.**
+
+Confirmed directly: POSTed `five_hundred_quantity=2` with
+`five_hundred_amount=999999` and `total=1` — the record saved with
+those forged values, no error, no rejection. A cash-count reconciliation
+record — the entire point of which is catching discrepancies between
+counted cash and expected cash — could contain **arbitrary, internally
+inconsistent numbers with no relationship to what was actually counted.**
+
+Fixed: `_compute_denominations()` now recomputes every denomination's
+total, and the grand total, from the submitted *quantities* server-side
+(the one number a `readonly` amount field can't fake as directly — it's
+still client input, but the arithmetic connecting it to money is now
+authoritative, not merely displayed). The client-submitted
+`*_amount`/`total` fields are no longer read at all. Applied to both Add
+and Update.
+
+### 🐛 Any authenticated user could rewrite anyone's shift handover record — same class of bug as Authentication's privilege escalation
+
+`Shift_Handover_Update` had no permission check beyond `@login_required`
+— but `Shift_Handover_Profile.html` only shows the "Update" link to
+`request.user.username == 'SuperAdmin'`. Confirmed directly: logged in
+as a plain non-admin account and POSTed to
+`/Shift-Handover-Update/<id>/` for a record it didn't own, setting
+`shift=HACKED` and (before the fix above) `total=99999` — it worked, no
+error, no permission denial. Added the same
+`is_superuser or username == 'SuperAdmin'` check used everywhere else in
+this pass. (`Shift_Handover_Delete` already had a real ownership/admin
+check — that one was fine.)
+
+### 🐛 Confirmed crash: GET on Delete, once authorized, → hard 500
+
+`Shift_Handover_Delete`'s ownership checks each `return redirect(...)`
+on failure, but the actual delete only happens inside
+`if request.method == 'POST':` with nothing after it — an authorized
+user (owner or admin) hitting the URL with a plain GET fell through with
+no return statement at all. Reproduced directly: `ValueError: ... didn't
+return an HttpResponse object.` Fixed with an explicit non-POST branch.
+
+### 🔒 A "readonly" username field doesn't stop a forged POST from impersonating someone else
+
+Same `readonly`-is-cosmetic issue as the amount fields: the Add form's
+username input is pre-filled with `request.user.username` and marked
+readonly for display, but the view read it from `request.POST` — a
+forged `username` value in a raw POST could attribute a shift handover
+to a different user entirely. Fixed: the record is now always attributed
+to `request.user`, the field is no longer read from POST data at all.
+
+### 🔒 Silent failure on Add; raw exception text shown on Update
+
+`Shift_Handover_Add` caught exceptions with a bare `print(e)` and no
+`messages.error()` at all — a failed submission (e.g. an unparseable
+date) silently reloaded a blank form with zero feedback, same pattern
+fixed elsewhere in this session. `Shift_Handover_Update` did
+`messages.error(request, f"An error occurred: {str(e)}")`, showing raw
+exception text. Both now log the real error and show a generic, safe
+message.
+
+**Verification:** `manage.py check` clean; 12 tests in
+`Shift_Handover/tests.py` covering the forged-amount recomputation (Add
+and Update), the impersonation fix, the privilege-escalation fix (both
+the negative case and that SuperAdmin retains access), the delete
+permission matrix (owner/admin/neither), and the GET-crash
+reproduction. PDF receipt template (`ShiftHandoverView.html`) verified to
+still render correctly via direct template rendering (this sandbox's
+`xhtml2pdf` is broken for unrelated reasons — see earlier session notes —
+so PDF views are checked by rendering the template directly rather than
+through the full `render_to_pdf()` call). Full cross-app smoke test still
+200s throughout.
+
+---
+

@@ -1,278 +1,249 @@
-# Import necessary modules for view functions
-from django.shortcuts import render, redirect, get_object_or_404  # For rendering templates and redirecting after form submission
-from django.contrib.auth.models import User  # For accessing User model
-from django.contrib import messages  # For displaying messages to users
-from .models import Shift_Handover  # Importing the Shift_Handover model from the current app's models
-from decimal import Decimal  # For handling decimal numbers
-from Dashboard.views import numberToWords  # For converting numbers to words
-from django.db import transaction  # Import transaction for atomicity
-from Reports.pdf import render_to_pdf  # Import the render_to_pdf function
-from django.contrib.auth.decorators import login_required  # For login-required decorators
+import logging
+from decimal import Decimal
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import Shift_Handover
+from Dashboard.views import numberToWords
+from django.db import transaction
+from Reports.pdf import render_to_pdf
+from django.contrib.auth.decorators import login_required
+
+logger = logging.getLogger(__name__)
+
+# denomination key -> (POST quantity key, model Counts field, model Total field, face value)
+# 'coin' has a face value of 1 because the form doesn't collect a coin
+# denomination breakdown, just a total coin value in rupees directly —
+# matches Shift_Handover_Add.html's calculateAmount('coin') using
+# denominationValue = 1.
+DENOMINATIONS = [
+    ('five_hundred', 'Shift_Handover_Five_Hundred_Counts', 'Shift_Handover_Five_Hundred_Total', Decimal('500')),
+    ('two_hundred', 'Shift_Handover_Two_Hundred_Counts', 'Shift_Handover_Two_Hundred_Total', Decimal('200')),
+    ('one_hundred', 'Shift_Handover_One_Hundred_Counts', 'Shift_Handover_One_Hundred_Total', Decimal('100')),
+    ('fifty', 'Shift_Handover_Fifty_Counts', 'Shift_Handover_Fifty_Total', Decimal('50')),
+    ('twenty', 'Shift_Handover_Twenty_Counts', 'Shift_Handover_Twenty_Total', Decimal('20')),
+    ('ten', 'Shift_Handover_Ten_Counts', 'Shift_Handover_Ten_Total', Decimal('10')),
+    ('five', 'Shift_Handover_Five_Counts', 'Shift_Handover_Five_Total', Decimal('5')),
+    ('coin', 'Shift_Handover_Coins_Counts', 'Shift_Handover_Coins_Total', Decimal('1')),
+]
+
+
+def _compute_denominations(request):
+    """Recomputes every denomination's total (and the grand total) from
+    the submitted *quantities* server-side, instead of trusting the
+    client-submitted amount/total fields directly.
+
+    The Add/Update forms compute these client-side in JS
+    (calculateAmount/calculateTotal in Shift_Handover_Add.html) purely
+    for the live on-screen display — the amount/total <input>s are
+    marked readonly, but readonly is cosmetic only; a raw POST (or a
+    modified request from browser devtools) can submit any value for
+    them completely decoupled from the quantities. For a cash-count
+    reconciliation record this matters: the server is now the actual
+    source of truth for the arithmetic, not just a passthrough for
+    whatever numbers the client happened to send. Returns
+    (model_field_values, grand_total, error_message_or_None).
+    """
+    values = {}
+    grand_total = Decimal('0')
+
+    for key, counts_field, total_field, face_value in DENOMINATIONS:
+        raw_quantity = request.POST.get(f'{key}_quantity', '0')
+        try:
+            quantity = int(raw_quantity) if raw_quantity else 0
+        except ValueError:
+            return None, None, f"'{raw_quantity}' is not a valid quantity for {key.replace('_', ' ')} notes."
+        if quantity < 0:
+            return None, None, f"Quantity for {key.replace('_', ' ')} notes cannot be negative."
+
+        line_total = face_value * quantity
+        values[counts_field] = quantity
+        values[total_field] = line_total
+        grand_total += line_total
+
+    return values, grand_total, None
 
 
 @login_required(login_url='Login_In')
 def Shift_Handover_Profile(request):
-   
     try:
-        # Start an atomic transaction
-        with transaction.atomic():
-            # Retrieve all company profiles from the database
-            queryset = Shift_Handover.objects.all()
-            # Prepare the context dictionary to pass company profiles to the template
-            context = {'shift_handover_profile': queryset}
-            # Render the company profile list page with the context
-            return render(request, "Shift_Handover_Profile.html", context)
+        queryset = Shift_Handover.objects.all()
+        return render(request, "Shift_Handover_Profile.html", {'shift_handover_profile': queryset})
     except Exception as e:
-        # Print the exception for debugging purposes
-        print(e)
-        # Render an error page if an exception occurs while fetching company profiles
-        return render(request, "error_page.html", {"error": str(e)})
-     
-   
-
+        logger.error(f"Unexpected error in Shift_Handover_Profile: {e}", exc_info=True)
+        return render(request, "error_page.html", {'error_message': 'An error occurred while fetching shift handover records. Please try again later.'})
 
 
 @login_required(login_url='Login_In')
 def Shift_Handover_Add(request):
-    # Check if the request method is POST to process the form submission
-    if request.method == 'POST':
-        try:
-            # Start an atomic transaction
-            with transaction.atomic():
-                # Retrieve form data
-                date = request.POST.get('date', '')
-                time = request.POST.get('time', '')
-                username = request.POST.get('username', '')
-                shift = request.POST.get('shift', '')
-                message_one = request.POST.get('message_one', '')
-                message_two = request.POST.get('message_two', '')
-                message_three = request.POST.get('message_three', '')
-                message_four = request.POST.get('message_four', '')
-                message_five = request.POST.get('message_five', '')
+    if request.method != 'POST':
+        return render(request, "Shift_Handover_Add.html")
 
-                # Retrieve quantities and amounts, with default values
-                five_hundred_quantity = int(request.POST.get('five_hundred_quantity', '0')) if request.POST.get('five_hundred_quantity', '') else 0
-                five_hundred_amount = Decimal(request.POST.get('five_hundred_amount', '0')) if request.POST.get('five_hundred_amount', '') else Decimal('0')
-                two_hundred_quantity = int(request.POST.get('two_hundred_quantity', '0')) if request.POST.get('two_hundred_quantity', '') else 0
-                two_hundred_amount = Decimal(request.POST.get('two_hundred_amount', '0')) if request.POST.get('two_hundred_amount', '') else Decimal('0')
-                one_hundred_quantity = int(request.POST.get('one_hundred_quantity', '0')) if request.POST.get('one_hundred_quantity', '') else 0
-                one_hundred_amount = Decimal(request.POST.get('one_hundred_amount', '0')) if request.POST.get('one_hundred_amount', '') else Decimal('0')
-                fifty_quantity = int(request.POST.get('fifty_quantity', '0')) if request.POST.get('fifty_quantity', '') else 0
-                fifty_amount = Decimal(request.POST.get('fifty_amount', '0')) if request.POST.get('fifty_amount', '') else Decimal('0')
-                twenty_quantity = int(request.POST.get('twenty_quantity', '0')) if request.POST.get('twenty_quantity', '') else 0
-                twenty_amount = Decimal(request.POST.get('twenty_amount', '0')) if request.POST.get('twenty_amount', '') else Decimal('0')
-                ten_quantity = int(request.POST.get('ten_quantity', '0')) if request.POST.get('ten_quantity', '') else 0
-                ten_amount = Decimal(request.POST.get('ten_amount', '0')) if request.POST.get('ten_amount', '') else Decimal('0')
-                five_quantity = int(request.POST.get('five_quantity', '0')) if request.POST.get('five_quantity', '') else 0
-                five_amount = Decimal(request.POST.get('five_amount', '0')) if request.POST.get('five_amount', '') else Decimal('0')
-                coin_quantity = int(request.POST.get('coin_quantity', '0')) if request.POST.get('coin_quantity', '') else 0
-                coin_amount = Decimal(request.POST.get('coin_amount', '0')) if request.POST.get('coin_amount', '') else Decimal('0')
-                total = Decimal(request.POST.get('total', '0')) if request.POST.get('total', '') else Decimal('0')
-                instruction = request.POST.get('instruction', '')
+    date = request.POST.get('date', '')
+    time = request.POST.get('time', '')
+    shift = request.POST.get('shift', '')
+    message_one = request.POST.get('message_one', '')
+    message_two = request.POST.get('message_two', '')
+    message_three = request.POST.get('message_three', '')
+    message_four = request.POST.get('message_four', '')
+    message_five = request.POST.get('message_five', '')
+    instruction = request.POST.get('instruction', '')
 
-                # Fetch the User instance using the username
-                user_instance = get_object_or_404(User, username=username)
+    denom_values, total, error = _compute_denominations(request)
+    if error:
+        messages.error(request, error)
+        return render(request, "Shift_Handover_Add.html")
 
-                # Extract the full name of the user from the instance
-                full_name = f"{user_instance.first_name} {user_instance.last_name}"
+    try:
+        with transaction.atomic():
+            # The form's username field is marked readonly and pre-filled
+            # with request.user.username for display, but readonly is
+            # cosmetic — a raw POST could submit a different username and
+            # attribute the handover to someone else. Always using the
+            # actual authenticated user makes that impossible rather than
+            # merely discouraged by the UI.
+            user_instance = request.user
+            full_name = f"{user_instance.first_name} {user_instance.last_name}".strip() or user_instance.username
 
-                # Convert the total amount to an integer
-                amount_as_number = int(float(total))  # Convert string to float then to int
+            amount_as_number = int(total)
+            amount_in_words = numberToWords(amount_as_number)
 
-                # Convert the total amount to words
-                amount_in_words = numberToWords(amount_as_number)
+            Shift_Handover.objects.create(
+                Shift_Handover_Date=date or None,
+                Shift_Handover_Time=time or None,
+                Shift_Handover_Username=user_instance,
+                Shift_Handover_Full_Name=full_name,
+                Shift_Handover_Shift=shift,
+                Shift_Handover_message_One=message_one,
+                Shift_Handover_message_Two=message_two,
+                Shift_Handover_message_Three=message_three,
+                Shift_Handover_message_Four=message_four,
+                Shift_Handover_message_Five=message_five,
+                Shift_Handover_Total=total,
+                Shift_Handover_Total_Amount_In_Words=amount_in_words,
+                Shift_Handover_Special_Instruction=instruction,
+                **denom_values,
+            )
+    except Exception as e:
+        # Previously: print(e) with no messages.error() at all -- a
+        # failed submission (bad date, etc.) silently reloaded a blank
+        # form with zero feedback.
+        logger.error(f"Unexpected error in Shift_Handover_Add: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while creating the shift handover record. Please check the date/time and try again.')
+        return render(request, "Shift_Handover_Add.html")
 
-                # Create the Shift_Handover object
-                Shift_Handover.objects.create(
-                    Shift_Handover_Date=date,
-                    Shift_Handover_Time=time,
-                    Shift_Handover_Username=user_instance,  # Save the User instance
-                    Shift_Handover_Full_Name=full_name,  # Save the full name as a separate field
-                    Shift_Handover_Shift=shift,
-                    Shift_Handover_message_One=message_one,
-                    Shift_Handover_message_Two=message_two,
-                    Shift_Handover_message_Three=message_three,
-                    Shift_Handover_message_Four=message_four,
-                    Shift_Handover_message_Five=message_five,
-                    Shift_Handover_Five_Hundred_Counts=five_hundred_quantity,
-                    Shift_Handover_Two_Hundred_Counts=two_hundred_quantity,
-                    Shift_Handover_One_Hundred_Counts=one_hundred_quantity,
-                    Shift_Handover_Fifty_Counts=fifty_quantity,
-                    Shift_Handover_Twenty_Counts=twenty_quantity,
-                    Shift_Handover_Ten_Counts=ten_quantity,
-                    Shift_Handover_Five_Counts=five_quantity,
-                    Shift_Handover_Coins_Counts=coin_quantity,
-                    Shift_Handover_Five_Hundred_Total=five_hundred_amount,
-                    Shift_Handover_Two_Hundred_Total=two_hundred_amount,
-                    Shift_Handover_One_Hundred_Total=one_hundred_amount,
-                    Shift_Handover_Fifty_Total=fifty_amount,
-                    Shift_Handover_Twenty_Total=twenty_amount,
-                    Shift_Handover_Ten_Total=ten_amount,
-                    Shift_Handover_Five_Total=five_amount,
-                    Shift_Handover_Coins_Total=coin_amount,
-                    Shift_Handover_Total=total,
-                    Shift_Handover_Total_Amount_In_Words=amount_in_words,
-                    Shift_Handover_Special_Instruction=instruction
-                )
+    logger.info(f"User '{request.user.username}' created shift handover record (total={total}).")
+    messages.success(request, 'Shift handover record created successfully.')
+    return redirect('/Shift-Handover-Profile/')
 
-                # Redirect to the Shift Handover Profile page after successful creation
-                return redirect('/Shift-Handover-Profile/')
-        except Exception as e:
-            # Print the exception for debugging purposes
-            print(e)
-            # Optionally, add error handling here (e.g., flash messages, logging, etc.)
 
-    # If not a POST request, render the form for adding a new shift handover
-    return render(request, "Shift_Handover_Add.html")
-
+def _is_shift_handover_admin(user):
+    return user.is_superuser or user.username == 'SuperAdmin'
 
 
 @login_required(login_url='Login_In')
 def Shift_Handover_Update(request, id):
-    # Retrieve the shift handover record to be updated
     shift_handover = get_object_or_404(Shift_Handover, id=id)
 
-    if request.method == 'POST':
-        try:
-            with transaction.atomic():  # Start a transaction
-                # Process the form submission
-                shift = request.POST.get('shift', '')
-                message_one = request.POST.get('message_one', '')
-                message_two = request.POST.get('message_two', '')
-                message_three = request.POST.get('message_three', '')
-                message_four = request.POST.get('message_four', '')
-                message_five = request.POST.get('message_five', '')
+    # Previously had no permission check at all beyond @login_required —
+    # but the list page only ever shows the "Update" link/button to
+    # request.user.username == 'SuperAdmin', so any other authenticated
+    # user could still POST directly to this URL and rewrite someone
+    # else's cash-count reconciliation record. Confirmed directly: a
+    # plain non-admin account could set Shift_Handover_Total to an
+    # arbitrary value via a raw POST. Matches the template's own
+    # SuperAdmin-only intent instead of leaving it enforced only by
+    # hiding a button.
+    if not _is_shift_handover_admin(request.user):
+        messages.error(request, "You don't have permission to update shift handover records.")
+        return redirect('/Shift-Handover-Profile/')
 
-                # Convert string inputs to integers (except for total)
-                five_hundred_quantity = int(request.POST.get('five_hundred_quantity', '0'))
-                five_hundred_amount = Decimal(request.POST.get('five_hundred_amount', '0'))
-                two_hundred_quantity = int(request.POST.get('two_hundred_quantity', '0'))
-                two_hundred_amount = Decimal(request.POST.get('two_hundred_amount', '0'))
-                one_hundred_quantity = int(request.POST.get('one_hundred_quantity', '0'))
-                one_hundred_amount = Decimal(request.POST.get('one_hundred_amount', '0'))
-                fifty_quantity = int(request.POST.get('fifty_quantity', '0'))
-                fifty_amount = Decimal(request.POST.get('fifty_amount', '0'))
-                twenty_quantity = int(request.POST.get('twenty_quantity', '0'))
-                twenty_amount = Decimal(request.POST.get('twenty_amount', '0'))
-                ten_quantity = int(request.POST.get('ten_quantity', '0'))
-                ten_amount = Decimal(request.POST.get('ten_amount', '0'))
-                five_quantity = int(request.POST.get('five_quantity', '0'))
-                five_amount = Decimal(request.POST.get('five_amount', '0'))
-                coin_quantity = int(request.POST.get('coin_quantity', '0'))
-                coin_amount = Decimal(request.POST.get('coin_amount', '0'))
-                total = Decimal(request.POST.get('total', '0'))
-                instruction = request.POST.get('instruction', '')
+    if request.method != 'POST':
+        return render(request, "Shift_Handover_Update.html", {'Shift_Handover_Update': shift_handover})
 
-                # Validate and convert amount to integer
-                amount_as_number = int(total)
+    shift = request.POST.get('shift', '')
+    message_one = request.POST.get('message_one', '')
+    message_two = request.POST.get('message_two', '')
+    message_three = request.POST.get('message_three', '')
+    message_four = request.POST.get('message_four', '')
+    message_five = request.POST.get('message_five', '')
+    instruction = request.POST.get('instruction', '')
 
-                # Convert the amount to words (assuming you have this function defined)
-                amount_in_words = numberToWords(amount_as_number)
+    denom_values, total, error = _compute_denominations(request)
+    if error:
+        messages.error(request, error)
+        return render(request, "Shift_Handover_Update.html", {'Shift_Handover_Update': shift_handover})
 
-                # Update the shift handover record
-                shift_handover.Shift_Handover_Shift = shift
-                shift_handover.Shift_Handover_message_One = message_one
-                shift_handover.Shift_Handover_message_Two = message_two
-                shift_handover.Shift_Handover_message_Three = message_three
-                shift_handover.Shift_Handover_message_Four = message_four
-                shift_handover.Shift_Handover_message_Five = message_five
+    try:
+        with transaction.atomic():
+            amount_as_number = int(total)
+            amount_in_words = numberToWords(amount_as_number)
 
-                shift_handover.Shift_Handover_Five_Hundred_Counts = five_hundred_quantity
-                shift_handover.Shift_Handover_Two_Hundred_Counts = two_hundred_quantity
-                shift_handover.Shift_Handover_One_Hundred_Counts = one_hundred_quantity
-                shift_handover.Shift_Handover_Fifty_Counts = fifty_quantity
-                shift_handover.Shift_Handover_Twenty_Counts = twenty_quantity
-                shift_handover.Shift_Handover_Ten_Counts = ten_quantity
-                shift_handover.Shift_Handover_Five_Counts = five_quantity
-                shift_handover.Shift_Handover_Coins_Counts = coin_quantity
+            shift_handover.Shift_Handover_Shift = shift
+            shift_handover.Shift_Handover_message_One = message_one
+            shift_handover.Shift_Handover_message_Two = message_two
+            shift_handover.Shift_Handover_message_Three = message_three
+            shift_handover.Shift_Handover_message_Four = message_four
+            shift_handover.Shift_Handover_message_Five = message_five
+            shift_handover.Shift_Handover_Special_Instruction = instruction
+            shift_handover.Shift_Handover_Total = total
+            shift_handover.Shift_Handover_Total_Amount_In_Words = amount_in_words
+            for field, value in denom_values.items():
+                setattr(shift_handover, field, value)
 
-                shift_handover.Shift_Handover_Five_Hundred_Total = five_hundred_amount
-                shift_handover.Shift_Handover_Two_Hundred_Total = two_hundred_amount
-                shift_handover.Shift_Handover_One_Hundred_Total = one_hundred_amount
-                shift_handover.Shift_Handover_Fifty_Total = fifty_amount
-                shift_handover.Shift_Handover_Twenty_Total = twenty_amount
-                shift_handover.Shift_Handover_Ten_Total = ten_amount
-                shift_handover.Shift_Handover_Five_Total = five_amount
-                shift_handover.Shift_Handover_Coins_Total = coin_amount
-                shift_handover.Shift_Handover_Total = total
-                shift_handover.Shift_Handover_Total_Amount_In_Words = amount_in_words
+            shift_handover.save()
+    except Exception as e:
+        logger.error(f"Unexpected error in Shift_Handover_Update: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while updating the shift handover record.')
+        return render(request, "Shift_Handover_Update.html", {'Shift_Handover_Update': shift_handover})
 
-                shift_handover.Shift_Handover_Special_Instruction = instruction
-
-                # Save the updated shift handover record
-                shift_handover.save()
-
-                # Display success message
-                messages.success(request, "Shift handover record updated successfully.")
-                
-                # Redirect to the shift handover profile list page after update
-                return redirect('/Shift-Handover-Profile/')
-
-        except Exception as e:
-            # Handle exceptions
-            messages.error(request, f"An error occurred while updating: {str(e)}")
-            return redirect(request.path)  # Redirect back to the form with an error message
-    
-    # Prepare the context with the shift handover record to be updated
-    context = {'Shift_Handover_Update': shift_handover}
-    
-    # Render the update form template with the shift handover record data
-    return render(request, "Shift_Handover_Update.html", context)
-
+    logger.info(f"User '{request.user.username}' updated shift handover record id={id} (total={total}).")
+    messages.success(request, "Shift handover record updated successfully.")
+    return redirect('/Shift-Handover-Profile/')
 
 
 @login_required(login_url='Login_In')
 def Shift_Handover_Delete(request, id):
-    # Retrieve the specific shift handover entry or return a 404 if not found
     shift_handover = get_object_or_404(Shift_Handover, id=id)
 
     try:
-        # Start an atomic transaction to ensure the delete operation is atomic
-        with transaction.atomic():  # Start a transaction
-            # Check if the user is allowed to delete
-            if (
-                request.user.username != "SuperAdmin" and
-                request.user.username != "Admin" and 
-                shift_handover.Shift_Handover_Username != request.user
-            ):
-                return redirect('/Shift-Handover-Profile/')  # Redirect if not authorized
+        is_admin = request.user.username in ("SuperAdmin", "Admin")
+        is_owner = shift_handover.Shift_Handover_Username == request.user
 
-            # Prevent Admin from deleting SuperAdmin's record
-            if shift_handover.Shift_Handover_Username.username == "SuperAdmin" and request.user.username == "Admin":
-                return redirect('/Shift-Handover-Profile/')  # Redirect if Admin tries to delete SuperAdmin's record
+        if not is_admin and not is_owner:
+            messages.error(request, "You don't have permission to delete this record.")
+            return redirect('/Shift-Handover-Profile/')
 
-            if request.method == 'POST':
-                # Proceed to delete the record
-                shift_handover.delete()  # Delete the shift handover entry
-                messages.success(request, 'Shift handover entry deleted successfully.')  # Success message
-                return redirect('/Shift-Handover-Profile/')  # Redirect after deletion
+        if shift_handover.Shift_Handover_Username.username == "SuperAdmin" and request.user.username == "Admin":
+            messages.error(request, "The SuperAdmin account's records can't be deleted.")
+            return redirect('/Shift-Handover-Profile/')
 
+        if request.method != 'POST':
+            # Previously: no branch at all for a non-POST request once
+            # the permission checks passed — an authorized user hitting
+            # this URL with a plain GET got "didn't return an
+            # HttpResponse" (a hard 500), reproduced directly.
+            messages.error(request, 'Invalid request.')
+            return redirect('/Shift-Handover-Profile/')
+
+        with transaction.atomic():
+            shift_handover.delete()
+
+        logger.info(f"User '{request.user.username}' deleted shift handover record id={id}.")
+        messages.success(request, 'Shift handover entry deleted successfully.')
+        return redirect('/Shift-Handover-Profile/')
     except Exception as e:
-        # Handle any unexpected errors
-        print(e)  # Log the exception for debugging purposes
-        messages.error(request, 'An error occurred during deletion.')  # Error message
-        return render(request, 'error_page.html', {'error_message': 'An error occurred during deletion.'})  # Render error page
-
+        logger.error(f"Unexpected error in Shift_Handover_Delete: {e}", exc_info=True)
+        messages.error(request, 'An error occurred during deletion.')
+        return render(request, 'error_page.html', {'error_message': 'An error occurred during deletion.'})
 
 
 @login_required(login_url='Login_In')
 def Shift_Handover_View(request, id):
     try:
-        with transaction.atomic():  # Start a transaction
-            # Fetch the specific shift handover using the provided id
-            shift_handover = get_object_or_404(Shift_Handover, id=id)
-
-            # Prepare context
-            context = {
-                'shift_handover_view': shift_handover,
-            }
-
-            # Render the context to PDF
-            return render_to_pdf('ShiftHandoverView.html', context)
-    
+        shift_handover = get_object_or_404(Shift_Handover, id=id)
+        return render_to_pdf('ShiftHandoverView.html', {'shift_handover_view': shift_handover})
     except Exception as e:
-        # Log the exception for debugging purposes
-        print(e)  # Optionally, log this to a logging system
-        messages.error(request, 'An error occurred while trying to fetch the shift handover details.')  # Error message
-        return redirect('/Shift-Handover-Profile/')  # Redirect to a relevant page on error
+        logger.error(f"Unexpected error in Shift_Handover_View: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while trying to fetch the shift handover details.')
+        return redirect('/Shift-Handover-Profile/')
