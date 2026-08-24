@@ -124,7 +124,7 @@ def Shift_Handover_Add(request):
             # Optionally, add error handling here (e.g., flash messages, logging, etc.)
 
     # If not a POST request, render the form for adding a new shift handover
-    return render(request, "shift_handover_add.html")
+    return render(request, "Shift_Handover_Add.html")
 
 
 
