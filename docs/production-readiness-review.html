@@ -217,6 +217,39 @@
   .tag.yes { background: var(--ok-bg); color: var(--ok); }
   .tag.no  { background: var(--critical-bg); color: var(--critical); }
 
+  /* ---------- changelog panel ---------- */
+
+  .changelog {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: var(--s4);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--s4);
+  }
+  .changelog-col { display: flex; flex-direction: column; gap: var(--s2); }
+  .changelog-col h3 { font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .changelog-col ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.92rem; color: var(--ink-2); }
+  .changelog-col ul li::marker { color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.fixed { background: var(--ok); }
+  .dot.open  { background: var(--critical); }
+  .dot.new   { background: var(--warn); }
+
+  .status-pill {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0.18em 0.55em;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .status-pill.fixed { background: var(--ok-bg); color: var(--ok); }
+  .status-pill.open  { background: var(--critical-bg); color: var(--critical); }
+
   /* ---------- scorecard ---------- */
 
   .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
@@ -392,11 +425,11 @@
     <div class="meta-row">
       <span>Hotel Pallav · Django Accounts System</span>
       <span>Code &amp; production-readiness audit</span>
-      <span>24 Aug 2026</span>
-      <span>Commit d436ff0 · main</span>
+      <span>Updated 24 Aug 2026</span>
+      <span>hotel-pallav-django-new · main</span>
     </div>
-    <h1>Can this go live? Not yet — and the UI is the smallest problem.</h1>
-    <p style="font-size:1.1rem;color:var(--ink-2)">A full read of all 6,464 lines of Python, 48 templates and 9 apps — with the findings below reproduced by actually running the code, not by eyeballing it.</p>
+    <h1>Second pass: three bugs fixed, the ones that actually matter are still open.</h1>
+    <p style="font-size:1.1rem;color:var(--ink-2)">Same method as the first review — every claim below re-run against the live code, not eyeballed. This pass covers <code>Hotel-Pallav-Django-New</code>, the fork where the UI rebuild and incidental bug fixes have been landing since the first review; the original <code>Hotel-Pallav-Django</code> repo is untouched and still matches the first report exactly.</p>
   </header>
 
   <!-- ===================== VERDICT ===================== -->
@@ -404,12 +437,51 @@
     <div class="verdict">
       <div class="score">
         <span class="eyebrow">Production ready</span>
-        <span class="num">20<sup>%</sup></span>
-        <span class="cap">For a system that handles cash, guest bills and GST invoices. A blog at this standard would score higher — money raises the bar.</span>
+        <span class="num">27<sup>%</sup></span>
+        <span class="cap">Up from 20%. The gain is real but narrow: crash bugs and repo hygiene, not the money-safety and authorization findings that decide whether this can launch.</span>
       </div>
       <div class="verdict-body">
-        <p><strong>The app does not currently run on a Linux server at all.</strong> I logged in with a real account and the very first page after login — the Dashboard — crashed with <code>TemplateDoesNotExist</code>. The code asks for <code>dashboard.html</code>; the file on disk is <code>Dashboard.html</code>. Windows ignores that difference. Every production server on earth does not.</p>
-        <p>That single fact tells the whole story: <strong>this code has never been run anywhere except a Windows development machine.</strong> Six templates are referenced that cannot be loaded, a live Gmail password sits in git history, any logged-in receptionist can make themselves a superuser, and every cash amount in Revenue and Expense is stored as text — so <span class="mono">₹2,000</span> typed with a comma is being counted as <span class="mono">₹2</span> in your dashboard totals right now.</p>
+        <p><strong>The Dashboard no longer crashes on Linux</strong> — that exact bug from the first review is fixed, along with a second, identical one on the Shift Handover page, and a URL-naming collision that would have pointed a "delete user" button at the wrong record. The Gmail credential is out of this repo's history entirely, and a <code>.gitignore</code> now exists.</p>
+        <p>None of that touches why this wasn't launchable in the first place. <strong>Re-run just now, against this exact repo:</strong> a non-staff account still promotes itself to superuser in one request. <code>'1500.50' + '2,000'</code> still sums to <code>1502.5</code>. <code>DEBUG=True</code> and the same insecure <code>SECRET_KEY</code> are still hardcoded. Zero tests still exist. And one bug is worse than first reported: the Staff Profile <em>Update</em> page doesn't just fail on Linux — its template filename is simply wrong, so it has never worked on any operating system.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CHANGELOG ===================== -->
+  <section>
+    <span class="eyebrow">What actually changed since the first pass</span>
+    <h2>Reconfirmed by running the code again, not by reading the diff</h2>
+    <div class="changelog">
+      <div class="changelog-col">
+        <h3><span class="dot fixed"></span>Fixed</h3>
+        <ul>
+          <li>Dashboard <code>TemplateDoesNotExist</code> crash (finding #01)</li>
+          <li>Same bug on Shift Handover's "Change Shift" page — found while doing the UI work, wasn't in the original six</li>
+          <li><code>deleteUserprofile</code> URL-name collision between Authentication and Staff_Profile — the delete button was one template change away from hitting the wrong view</li>
+          <li>Gmail app password no longer anywhere in this repo's history; pulled from the environment now</li>
+          <li><code>.gitignore</code> added; <code>db.sqlite3</code> and compiled <code>.pyc</code> files no longer tracked</li>
+          <li><code>STATICFILES_DIRS</code> typo fixed, <code>MEDIA_ROOT</code> moved out of the static tree</li>
+        </ul>
+      </div>
+      <div class="changelog-col">
+        <h3><span class="dot open"></span>Reconfirmed still open</h3>
+        <ul>
+          <li>Privilege escalation (#02) — re-tested live, still succeeds</li>
+          <li>Money-as-text aggregation (#03) — re-tested live, still wrong</li>
+          <li><code>DEBUG=True</code>, hardcoded <code>SECRET_KEY</code>, empty <code>ALLOWED_HOSTS</code> — all 7 <code>check --deploy</code> warnings, unchanged</li>
+          <li>Zero automated tests — still 27 total lines across all 9 <code>tests.py</code> files</li>
+          <li>Bill Master's browser-trusted totals and hotel/food copy-paste bugs (#06, #07) — untouched, this pass was UI-only</li>
+        </ul>
+      </div>
+      <div class="changelog-col">
+        <h3><span class="dot new"></span>New finding</h3>
+        <ul>
+          <li><strong>Staff Profile's Update page has never worked, on any OS.</strong> Its template name isn't miscased like the others — it's just wrong (<code>Staff__Profile_User_Update.html</code> vs. the real <code>..._Registration_Update.html</code>). Every "Update" click silently falls through to the generic error page. See finding #01.</li>
+        </ul>
+        <h3 style="margin-top:.5rem"><span class="dot fixed"></span>In progress</h3>
+        <ul>
+          <li>UI rebuild onto the real hotelpallav.in brand: 24 of 48 templates converted so far (base template, nav, Dashboard, auth, Company, Staff Profile, Shift Handover, Revenue). Bill Master, remaining Expense forms, and Reports still on the old skin.</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -431,7 +503,7 @@
       <div class="answer">
         <span class="tag yes">Yes</span>
         <span class="q">Continue with Django?</span>
-        <span class="a">Yes — but not "just update the UI". The UI is roughly a quarter of the work left. The backend needs real authorisation, real money columns, and a real deployment before any of it is safe to launch.</span>
+        <span class="a">Yes — and that's what's happening. But the UI work now underway (24 of 48 templates, real hotelpallav.in branding) is still "just the UI": it hasn't touched authorisation, money columns, or deployment. Those are still 0% done, exactly as before.</span>
       </div>
     </div>
   </section>
@@ -439,8 +511,8 @@
   <!-- ===================== SCORECARD ===================== -->
   <section>
     <span class="eyebrow">Scorecard</span>
-    <h2>Where the 20% comes from</h2>
-    <p>Each area scored on what a paying hotel would need on day one, not on effort spent.</p>
+    <h2>Where the 27% comes from</h2>
+    <p>Each area scored on what a paying hotel would need on day one, not on effort spent. Rows marked <span class="status-pill fixed">Improved</span> moved since the first review; rows marked <span class="status-pill open">Reconfirmed open</span> or <span class="status-pill open">Unchanged</span> were re-tested against this exact repo and found exactly as before.</p>
     <div class="table-wrap">
       <table>
         <thead>
@@ -449,23 +521,23 @@
         <tbody>
           <tr>
             <td><strong>Runs on a server</strong></td>
-            <td class="pct" style="color:var(--critical)">0%<span class="bar"><i style="width:2%;background:var(--critical)"></i></span></td>
-            <td>Dashboard 500s on Linux. Six broken template references. No WSGI/ASGI setup, no Gunicorn, no Nginx, no static file pipeline, no <code>.env</code>.</td>
+            <td class="pct" style="color:var(--warn)">30%<span class="bar"><i style="width:30%;background:var(--warn)"></i></span></td>
+            <td><span class="status-pill fixed">Improved</span> Dashboard and Shift Handover crashes fixed. Four broken template references remain (<code>confirm_delete.html</code>, <code>error_template.html</code>, <code>update_user_role.html</code>, <code>Staff__Profile_User_Update.html</code>) — the last one wrong on any OS, not just Linux. Still no WSGI/ASGI setup, no Gunicorn, no Nginx, no <code>.env</code>.</td>
           </tr>
           <tr>
             <td><strong>Automated tests</strong></td>
             <td class="pct" style="color:var(--critical)">0%<span class="bar"><i style="width:2%;background:var(--critical)"></i></span></td>
-            <td>All 9 <code>tests.py</code> files contain exactly one line: <code>from django.test import TestCase</code>. Nothing is tested. Nothing can be safely changed.</td>
+            <td><span class="status-pill open">Unchanged</span> All 9 <code>tests.py</code> files contain exactly one line: <code>from django.test import TestCase</code>. Nothing is tested. Nothing can be safely changed.</td>
           </tr>
           <tr>
             <td><strong>Access control</strong></td>
             <td class="pct" style="color:var(--critical)">10%<span class="bar"><i style="width:10%;background:var(--critical)"></i></span></td>
-            <td>Login works. After that, every user is effectively an admin — proven below. Roles exist in the UI but are never enforced in code.</td>
+            <td><span class="status-pill open">Reconfirmed open</span> Re-tested live: a non-staff account still promotes itself to superuser in one request. Roles exist in the UI but are never enforced in code.</td>
           </tr>
           <tr>
             <td><strong>Secrets &amp; config</strong></td>
-            <td class="pct" style="color:var(--critical)">5%<span class="bar"><i style="width:5%;background:var(--critical)"></i></span></td>
-            <td>Secret key, Gmail app password and <code>DEBUG=True</code> all hardcoded and committed. <code>db.sqlite3</code> and 175 <code>.pyc</code> files tracked in git. No <code>.gitignore</code>.</td>
+            <td class="pct" style="color:var(--warn)">20%<span class="bar"><i style="width:20%;background:var(--warn)"></i></span></td>
+            <td><span class="status-pill fixed">Improved</span> Gmail password no longer in this repo's history; pulled from env now. <code>.gitignore</code> added, <code>db.sqlite3</code>/<code>.pyc</code> untracked. But <code>SECRET_KEY</code> is still the same hardcoded insecure value, <code>DEBUG</code> is still <code>True</code>, <code>ALLOWED_HOSTS</code> still empty.</td>
           </tr>
           <tr>
             <td><strong>Data model</strong></td>
@@ -480,17 +552,17 @@
           <tr>
             <td><strong>Business logic</strong></td>
             <td class="pct" style="color:var(--warn)">35%<span class="bar"><i style="width:35%;background:var(--warn)"></i></span></td>
-            <td>The advance → bill → debit-bill flow is genuinely thought through. But totals are trusted from the browser, two copy-paste bugs mix hotel and food money, and there is no locking on balance updates.</td>
+            <td><span class="status-pill open">Unchanged</span> Untouched by the UI-only pass. Totals are still trusted from the browser, the two hotel/food copy-paste bugs are still there, still no locking on balance updates.</td>
           </tr>
           <tr>
             <td><strong>Code structure</strong></td>
-            <td class="pct" style="color:var(--warn)">30%<span class="bar"><i style="width:30%;background:var(--warn)"></i></span></td>
-            <td>Clean app split by domain — that part is right. But zero forms, zero services, zero shared template; 6,464 lines of near-identical <code>request.POST.get</code> blocks.</td>
+            <td class="pct" style="color:var(--warn)">35%<span class="bar"><i style="width:35%;background:var(--warn)"></i></span></td>
+            <td>Views still zero forms, zero services — that's backend, untouched. But two real shared partials now exist (<code>_company_form_fields.html</code>, <code>_staff_form_fields.html</code>) replacing what were near-duplicate 40-field forms; small, but it's the first reuse in the codebase.</td>
           </tr>
           <tr>
             <td><strong>Front end</strong></td>
-            <td class="pct" style="color:var(--warn)">40%<span class="bar"><i style="width:40%;background:var(--warn)"></i></span></td>
-            <td>48 standalone HTML files, not one <code>{% extends %}</code>. 18,292 lines of duplicated markup. Bootstrap and jQuery loaded from an unmaintained CDN with known CVEs and no fallback.</td>
+            <td class="pct" style="color:var(--ok)">60%<span class="bar"><i style="width:60%;background:var(--ok)"></i></span></td>
+            <td><span class="status-pill fixed">Improved</span> 24 of 48 templates now extend a real <code>base.html</code>/<code>guest_base.html</code> — a genuine design system (Tailwind + Alpine, matching the hotelpallav.in brand), responsive, with a data-driven sidebar nav instead of 48 pasted copies. The other 24 — mainly Bill Master — are still the old unmaintained Bootstrap/jQuery CDN skin.</td>
           </tr>
           <tr>
             <td><strong>Django's own safety net</strong></td>
@@ -514,16 +586,19 @@
     <article class="finding sev-blocker">
       <div class="finding-head">
         <span class="idx">01</span>
-        <h3>The app crashes on any Linux server, on the first page after login</h3>
+        <h3>Six broken template references — two fixed, four still open, one worse than first reported</h3>
         <span class="sev blocker">Blocker</span>
       </div>
-      <div class="where">Dashboard/views.py:137 · Shift_Handover/views.py:127 · Revenue/views.py:209,243 · Expense/views.py:168,201,331,364,442,517,628,700 · Staff_Profile/views.py:172 · Authentication/views.py:338</div>
-      <p>Six template names in the code do not match any file on disk. Windows and macOS match filenames case-insensitively, so this works on your laptop. Linux — every hosting provider you will use — does not.</p>
-<pre><span class="cmt"># Dashboard/views.py:137 — the landing page after every login</span>
-return render(request, <b>"dashboard.html"</b>, context)   <span class="cmt"># file on disk is Dashboard.html</span></pre>
+      <div class="where">Dashboard/views.py:137 <span class="status-pill fixed">Fixed</span> · Shift_Handover/views.py:127 <span class="status-pill fixed">Fixed</span> · Revenue/views.py:209,243 · Expense/views.py:168,201,331,364,442,517,628,700 · Staff_Profile/views.py:172 · Authentication/views.py:338 — <span class="status-pill open">Still open</span></div>
+      <p>Windows and macOS match filenames case-insensitively, so a mismatched template name works on a laptop. Linux — every hosting provider you will use — does not. Two of the original six are now fixed:</p>
+<pre><span class="cmt"># Dashboard/views.py:137 — now fixed</span>
+return render(request, <b>"Dashboard.html"</b>, context)   <span class="cmt"># was "dashboard.html", didn't exist</span>
+<span class="cmt"># Shift_Handover/views.py:127 — now fixed</span>
+return render(request, <b>"Shift_Handover_Add.html"</b>)   <span class="cmt"># was "shift_handover_add.html", didn't exist</span></pre>
+      <p>Four remain, and one is a sharper finding than the original report gave it credit for. <code>confirm_delete.html</code> (7 call sites across Revenue and Expense), <code>error_template.html</code> (3 call sites in Expense) and <code>update_user_role.html</code> are miscased-or-missing the same way the fixed two were. But <code>Staff__Profile_User_Update.html</code> — the Staff Profile edit form — isn't a casing mismatch at all. The real file is <code>Staff__Profile_User_Registration_Update.html</code>; the name in the view is just wrong. That means this page has never rendered, on any operating system, including the original Windows development machine.</p>
       <div class="proof">
-        <span class="label">Reproduced</span>
-        Logged in as a real user → <code>302 → /Dashboard-Profile/</code> → <code>django.template.exceptions.TemplateDoesNotExist: dashboard.html</code>. Also missing entirely, not just miscased: <code>confirm_delete.html</code> (7 views), <code>error_template.html</code> (3 views), <code>update_user_role.html</code>, <code>Staff__Profile_User_Update.html</code>.
+        <span class="label">Reproduced against this exact repo, just now</span>
+        <code>GET /Dashboard-Profile/</code> and <code>GET /Shift-Handover-Add/</code> → both <code>200</code>. <code>get_template()</code> confirms all four remaining names resolve on <strong>no</strong> filesystem, case-insensitive or not. Opening any staff member's Update page → falls straight through to the generic error page, every time.
       </div>
     </article>
 
@@ -532,13 +607,13 @@ return render(request, <b>"dashboard.html"</b>, context)   <span class="cmt"># f
       <div class="finding-head">
         <span class="idx">02</span>
         <h3>Any logged-in user can make themselves a superuser and delete anyone</h3>
-        <span class="sev blocker">Blocker</span>
+        <span class="sev blocker">Blocker <span class="status-pill open">Reconfirmed open</span></span>
       </div>
       <div class="where">Authentication/views.py:75 (Registration) · :127 (Delete_User_Profile) · :312 (Update_User_Role) · :291 (User_Active_Deactive_Status)</div>
       <p>These four views are protected by <code>@login_required</code> and nothing else. <code>@login_required</code> only asks <em>"are you logged in?"</em> — never <em>"are you allowed?"</em>. A receptionist account has the same power over user accounts as the owner.</p>
       <p>Worse, <code>Delete_User_Profile</code> deletes on a plain <code>GET</code>. That means a link or an image tag can delete a user account when an admin merely opens a page — CSRF protection does not apply to GET.</p>
       <div class="proof">
-        <span class="label">Reproduced — logged in as a non-staff, non-superuser account</span>
+        <span class="label">Reproduced — logged in as a non-staff, non-superuser account, re-run against this repo just now</span>
         <ul class="tight" style="margin-top:.4rem">
           <li>Created a brand-new <code>is_superuser=True</code> account via <code>POST /User-Registration/</code> — <strong>succeeded</strong></li>
           <li>Promoted itself to superuser via <code>POST /Update-User-Role/&lt;own id&gt;/</code> — <strong>succeeded</strong></li>
@@ -552,7 +627,7 @@ return render(request, <b>"dashboard.html"</b>, context)   <span class="cmt"># f
       <div class="finding-head">
         <span class="idx">03</span>
         <h3>Cash amounts are stored as text — your totals are already wrong</h3>
-        <span class="sev blocker">Blocker</span>
+        <span class="sev blocker">Blocker <span class="status-pill open">Reconfirmed open</span></span>
       </div>
       <div class="where">Revenue/models.py · Expense/models.py · Shift_Handover/models.py — 14 columns</div>
       <p>Every deposit, withdrawal and miscellaneous expense amount is a <code>CharField</code>, not a <code>DecimalField</code>. The Dashboard then runs <code>Sum()</code> over those text columns. SQLite silently reads the leading digits of each string and gives up at the first non-digit.</p>
@@ -562,8 +637,8 @@ Deposite_Hotel_Amount = models.<b>CharField</b>(max_length=50)   <span class="cm
 <span class="cmt"># Dashboard/views.py:56</span>
 .aggregate(total=<b>Sum</b>('Deposite_Hotel_Amount'))            <span class="cmt"># summing text</span></pre>
       <div class="proof">
-        <span class="label">Reproduced against your schema</span>
-        Two rows — <code>'1500.50'</code> and <code>'2,000'</code>. Correct total: <strong>₹3,500.50</strong>. What the Dashboard returned: <strong>₹1,502.50</strong>. The comma turned ₹2,000 into ₹2. Anyone who has ever typed a comma has silently corrupted a daily cash total.
+        <span class="label">Reproduced against your schema, re-run against this repo just now</span>
+        Two rows — <code>'1500.50'</code> and <code>'2,000'</code>. Correct total: <strong>₹3,500.50</strong>. What the Dashboard returned: <strong>₹1,502.50</strong>, identical to the first review. The comma turned ₹2,000 into ₹2. Anyone who has ever typed a comma has silently corrupted a daily cash total.
       </div>
       <p>This also blocks the database move you will need. PostgreSQL and MySQL refuse to <code>SUM()</code> a text column outright — so the Dashboard will hard-crash the moment you leave SQLite, which you must do before launch.</p>
     </article>
@@ -573,16 +648,16 @@ Deposite_Hotel_Amount = models.<b>CharField</b>(max_length=50)   <span class="cm
       <div class="finding-head">
         <span class="idx">04</span>
         <h3>A live Gmail password and the secret key are committed to git</h3>
-        <span class="sev blocker">Blocker</span>
+        <span class="sev blocker">Blocker <span class="status-pill fixed">Partly fixed</span></span>
       </div>
-      <div class="where">Main/settings.py:23, 26, 154 · present since commit b686e0f</div>
-<pre>SECRET_KEY = 'django-insecure-n)-ur$w5bcd(-=-gb=kxs#k#$=o2b+dciy=e)af*s*58830z62'
-DEBUG = <b>True</b>
-ALLOWED_HOSTS = []
-EMAIL_HOST_USER = 'noreply.hotelpallav@gmail.com'
-EMAIL_HOST_PASSWORD = <b>'tjkh khnf elfw elfq'</b>   <span class="cmt"># Gmail app password, in git history</span></pre>
-      <p>Two consequences. First, that app password is compromised and must be revoked in the Google account today — not when you launch. Second, <code>SECRET_KEY</code> in public history means anyone can forge session cookies and password-reset tokens; it has to be rotated, which logs everyone out once.</p>
-      <p>With <code>DEBUG=True</code> in production, every crash renders a full stack trace, your settings, and your SQL to whoever triggered it. <code>manage.py check --deploy</code> reports 7 security warnings; these are the load-bearing ones.</p>
+      <div class="where">Main/settings.py:23, 26, 154 (this repo, fresh git history) · original leak still lives at Hotel-Pallav-Django commit b686e0f</div>
+<pre>SECRET_KEY = 'django-insecure-n)-ur$w5bcd(-=-gb=kxs#k#$=o2b+dciy=e)af*s*58830z62'   <span class="cmt"># still open</span>
+DEBUG = <b>True</b>   <span class="cmt"># still open</span>
+ALLOWED_HOSTS = []   <span class="cmt"># still open</span>
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')       <span class="cmt"># fixed — pulled from env now</span>
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')   <span class="cmt"># fixed</span></pre>
+      <p>The Gmail app password no longer exists anywhere in this repo's git history — it was never committed here, and the hardcoded value in <code>settings.py</code> is gone. It's still compromised and should still be revoked in the Google account, since it remains exposed in the <em>original</em> <code>Hotel-Pallav-Django</code> repo's history, which is untouched. But this repo itself is clean on that specific finding.</p>
+      <p>The rest is unchanged: <code>SECRET_KEY</code> is the same hardcoded insecure value, <code>DEBUG=True</code>, <code>ALLOWED_HOSTS</code> is still empty. <code>manage.py check --deploy</code> reports the same 7 security warnings it did in the first review.</p>
     </article>
 
     <!-- 5 -->
@@ -710,8 +785,8 @@ queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
 
     <div class="stack-sm">
       <article class="finding sev-medium">
-        <div class="finding-head"><span class="idx">16</span><h3>48 templates, zero shared base template</h3><span class="sev medium">Medium</span></div>
-        <p>18,292 lines of HTML across 48 files and not a single <code>{% extends %}</code> or <code>{% include %}</code>. The navigation, sidebar and styling are pasted into every page. <strong>This is why "just update the UI" is not a small job</strong> — today, changing a menu item is 48 edits, and they will drift.</p>
+        <div class="finding-head"><span class="idx">16</span><h3>48 templates, zero shared base template</h3><span class="sev medium">Medium <span class="status-pill fixed">Half fixed</span></span></div>
+        <p>Was 18,292 lines across 48 files with not a single <code>{% extends %}</code>. In this repo, 24 of the 48 now extend a shared <code>base.html</code> or <code>guest_base.html</code>, with the nav driven from one Python data structure instead of pasted into every page. The other 24 — Bill Master's 10 templates, most of Expense, and Reports — are still the original copy-pasted markup this finding describes.</p>
       </article>
 
       <article class="finding sev-medium">
@@ -735,8 +810,8 @@ queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
       </article>
 
       <article class="finding sev-medium">
-        <div class="finding-head"><span class="idx">21</span><h3>Repository hygiene</h3><span class="sev medium">Medium</span></div>
-        <p>No <code>.gitignore</code>. <code>db.sqlite3</code> — your actual hotel data — plus 175 compiled <code>.pyc</code> files are committed. <code>requirements.txt</code> lists both <code>import-export</code> and <code>django-import-export</code> (the first is an unrelated abandoned package). Both <code>Authentication/views.py</code> and <code>Reset_Password_Email.py</code> open with <code>from venv import logger</code> — an accidental import from Python's virtualenv module that happens to expose a logger object.</p>
+        <div class="finding-head"><span class="idx">21</span><h3>Repository hygiene</h3><span class="sev medium">Medium <span class="status-pill fixed">Fixed in this repo</span></span></div>
+        <p>This repo now has a <code>.gitignore</code>; <code>db.sqlite3</code> and compiled <code>.pyc</code> files are untracked. The original <code>Hotel-Pallav-Django</code> repo is unchanged and still has neither. <code>requirements.txt</code> still lists both <code>import-export</code> and <code>django-import-export</code> (the first is an unrelated abandoned package) — untouched, since dependency cleanup wasn't part of the UI pass. Both <code>Authentication/views.py</code> and <code>Reset_Password_Email.py</code> still open with <code>from venv import logger</code> — an accidental import from Python's virtualenv module that happens to expose a logger object.</p>
       </article>
 
       <article class="finding sev-medium">
@@ -797,8 +872,8 @@ queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
 
     <div class="callout">
       <h3>On "we just have to update the UI"</h3>
-      <p>This is the part I would most want you to hear. The UI is roughly a quarter of the remaining work, and it is not the part that can hurt you. A prettier screen sitting on top of finding #3 still adds ₹2,000 as ₹2. It still lets a receptionist promote herself to superuser. It still crashes on a Linux server.</p>
-      <p>And the UI work itself is larger than it looks: with 48 standalone templates and no base file, any redesign means either editing all 48 or building the shared template layer first. Do the backend work in this order, and the UI becomes the easy, enjoyable phase at the end — on a foundation that will hold it.</p>
+      <p>This is still the part I most want you to hear, now with a live example instead of a hypothetical. The UI rebuild that's underway is genuinely good work — a real design system, responsive, matching your actual brand. And it has fixed real bugs incidentally, twice. But it is UI work: a beautifully re-themed Bill Master page, once it's converted, will still trust its totals from the browser and still have the hotel/food copy-paste bug. Re-skinning a page doesn't touch the Python underneath it.</p>
+      <p>The good news: doing the UI first didn't cost anything it doesn't have to. It touches templates, not views or models, so it hasn't made Phases 01–03 any harder — they're still exactly the same backend work, waiting in the same order. Just don't mistake a finished UI for a finished app.</p>
     </div>
   </section>
 
@@ -814,21 +889,21 @@ queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
       <div class="phase">
         <div class="phase-when"><span class="n">Now</span><span class="t">today · 1 hour</span></div>
         <div class="phase-body">
-          <h3>Stop the bleeding</h3>
-          <p>Revoke the Gmail app password in the Google account. Add a <code>.gitignore</code>; remove <code>db.sqlite3</code> and the 175 <code>.pyc</code> files from tracking. Treat the committed <code>SECRET_KEY</code> as burned. None of this waits for a sprint.</p>
+          <h3>Stop the bleeding <span class="status-pill fixed">Partly done</span></h3>
+          <p><strong>Done:</strong> <code>.gitignore</code> added, <code>db.sqlite3</code> and <code>.pyc</code> files untracked, Gmail credential pulled from environment in this repo. <strong>Still to do:</strong> revoke the Gmail app password in the Google account itself — it's still exposed in the original repo's git history, and removing it from new code doesn't revoke it. Treat <code>SECRET_KEY</code> as burned and rotate it.</p>
         </div>
       </div>
 
       <div class="phase">
         <div class="phase-when"><span class="n">01</span><span class="t">weeks 1–3</span></div>
         <div class="phase-body">
-          <h3>Make it runnable and safe</h3>
+          <h3>Make it runnable and safe <span class="status-pill open">2 of 5 started</span></h3>
           <ul class="tight">
-            <li>Fix all six template references; run the whole app once on a Linux box before anything else</li>
-            <li>Move secrets to environment variables; <code>DEBUG=False</code>, real <code>ALLOWED_HOSTS</code>, secure cookie and HSTS settings — clear all 7 <code>check --deploy</code> warnings</li>
-            <li>Add real authorisation: a role model, <code>@permission_required</code> or a decorator on every state-changing view, and <code>@require_POST</code> on every delete</li>
-            <li>Take the acting user from <code>request.user</code> in all 12 cash views</li>
-            <li>Set up <code>LOGGING</code> to a file, replace the 48 <code>print()</code> calls, and narrow the widest of the 66 exception handlers</li>
+            <li><s>Fix all six template references</s> — two fixed (Dashboard, Shift Handover Add); four remain, run the whole app on a Linux box to confirm before moving on</li>
+            <li>Move secrets to environment variables; <code>DEBUG=False</code>, real <code>ALLOWED_HOSTS</code>, secure cookie and HSTS settings — clear all 7 <code>check --deploy</code> warnings (still 7, unchanged)</li>
+            <li>Add real authorisation: a role model, <code>@permission_required</code> or a decorator on every state-changing view, and <code>@require_POST</code> on every delete — not started</li>
+            <li>Take the acting user from <code>request.user</code> in all 12 cash views — not started</li>
+            <li>Set up <code>LOGGING</code> to a file, replace the 48 <code>print()</code> calls, and narrow the widest of the 66 exception handlers — not started</li>
           </ul>
         </div>
       </div>
@@ -859,8 +934,8 @@ queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
       <div class="phase">
         <div class="phase-when"><span class="n">04</span><span class="t">weeks 8–11</span></div>
         <div class="phase-body">
-          <h3>The UI you actually wanted</h3>
-          <p>Build <code>base.html</code> with the nav, sidebar and blocks, then convert the 48 pages to extend it — most will shrink by two thirds. Vendor Bootstrap and jQuery locally on current versions and serve them with WhiteNoise. Then redesign, once, in one place.</p>
+          <h3>The UI you actually wanted <span class="status-pill fixed">Underway, out of order</span></h3>
+          <p><code>base.html</code> and <code>guest_base.html</code> exist and are built — Tailwind + Alpine, matching the real hotelpallav.in brand, nav driven from one data structure instead of pasted 48 times. 24 of 48 templates converted. This happened out of the recommended sequence (before Phases 01–03), at the user's explicit request; it's safe to do in parallel since it touches templates only, not the business logic Phases 01–03 cover — but it doesn't substitute for them. A prettier Bill Master page still has the same trusted-total and hotel/food copy-paste bugs underneath.</p>
         </div>
       </div>
 
@@ -880,7 +955,7 @@ queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
   </section>
 
   <footer>
-    <p>Reviewed at commit <code class="mono">d436ff0</code> on <code class="mono">main</code>: 9 Django apps, 6,464 lines of Python, 48 templates, 50 migrations. Findings #01, #02 and #03 were reproduced by running the application against a copy of the committed database; the rest were traced to specific lines, cited above. Percentages are a judgement of readiness for a system that handles money, not a measure of effort spent.</p>
+    <p><strong>First pass</strong> reviewed <code class="mono">Hotel-Pallav-Django</code> at commit <code class="mono">d436ff0</code> — that repo and that report are unchanged; nothing here alters it. <strong>This pass</strong> reviewed <code class="mono">Hotel-Pallav-Django-New</code> on <code class="mono">main</code> as of 24 Aug 2026: findings #01 (both fixed and still-open halves), #02, and #03 were re-reproduced by running the application against a copy of the database, not assumed carried-over from the first report. The new Staff Profile finding was found and confirmed the same way. Everything else was checked by diff against the first repo — unless marked <span class="status-pill fixed">Fixed</span> or <span class="status-pill fixed">Improved</span> above, assume it's exactly as the first report described. Percentages are a judgement of readiness for a system that handles money, not a measure of effort spent.</p>
   </footer>
 
 </div>
