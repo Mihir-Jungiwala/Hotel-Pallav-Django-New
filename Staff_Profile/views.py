@@ -169,7 +169,7 @@ def Staff__Profile_User_Update(request, id):
         
         # Prepare the context for the GET request, passing the current user profile to the template
         context = {'user': queryset}
-        return render(request, 'Staff__Profile_User_Update.html', context)
+        return render(request, 'Staff__Profile_User_Registration_Update.html', context)
     
     except Exception as e:
         print(e) 
