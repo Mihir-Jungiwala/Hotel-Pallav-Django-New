@@ -1,8 +1,13 @@
-from venv import logger
+import logging
+
 from django.core.mail import send_mail
 from django.conf import settings
+from django.urls import reverse
 
-def Send_Reset_Password_Mail(email, first_name, last_name, token):
+logger = logging.getLogger(__name__)
+
+
+def Send_Reset_Password_Mail(email, first_name, last_name, token, request=None):
     """
     Sends a password reset email to the user.
 
@@ -11,13 +16,28 @@ def Send_Reset_Password_Mail(email, first_name, last_name, token):
         first_name (str): The first name of the user.
         last_name (str): The last name of the user.
         token (str): The unique token for password reset.
+        request: The current HttpRequest, used to build an absolute
+            reset link against the actual host the app is served from.
+            Falls back to DJANGO_SITE_BASE_URL (or localhost, for local
+            dev) if no request is available.
 
     Returns:
         bool: True if the email was sent successfully, raises an exception otherwise.
     """
-    
-    # Construct the reset password link using the provided token
-    reset_link = f"http://127.0.0.1:8000/Change-Password/{token}/"
+
+    # Previously hardcoded to http://127.0.0.1:8000 — every reset email
+    # sent from a real deployment would have linked back to localhost,
+    # making the "reset password" flow completely non-functional in
+    # production. Building from the actual request host fixes it; the
+    # env var fallback covers callers (or future management commands)
+    # that don't have a request to hand in.
+    if request is not None:
+        reset_path = reverse('changepassword', args=[token])
+        reset_link = request.build_absolute_uri(reset_path)
+    else:
+        import os
+        base_url = os.environ.get('DJANGO_SITE_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
+        reset_link = f"{base_url}/Change-Password/{token}/"
     
     # Set the subject for the email
     subject = 'Password Reset Request - Action Required'

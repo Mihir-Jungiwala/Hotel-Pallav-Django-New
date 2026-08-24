@@ -6,7 +6,16 @@ from django.utils import timezone
 
 class Authentication(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True) 
+    is_active = models.BooleanField(default=True)
+    # Ties this row to the actual Django session that created it, so
+    # AutoLogoutMiddleware checks *this* session's idle time instead of
+    # "whichever row for this user happens to have the most recent
+    # activity_time" — which previously meant one active session's
+    # activity could silently keep another idle session of the same user
+    # alive, or vice versa. Nullable/blank so existing rows (created
+    # before this field existed) don't break; the middleware falls back
+    # to the pre-existing lookup for those.
+    session_key = models.CharField(max_length=40, null=True, blank=True, db_index=True)
     forgot_password_token = models.CharField(max_length=100, null=True)  
     token_used = models.BooleanField(default=False)  
     email_sent_time = models.DateTimeField(null=True, blank=True)

@@ -1,51 +1,39 @@
+import logging
+
 from django.shortcuts import redirect
 from django.utils import timezone
 from django.contrib.auth import logout
-from .models import Authentication  
-from datetime import timedelta # Import timedelta for time calculations
-import logging  # Import the logging module for logging messages and errors
-from django.db import transaction  # Import transaction management for atomic database operations
-from django.shortcuts import redirect  # Import redirect function for redirecting HTTP requests
-from django.contrib.auth import logout  # Import logout function to log users out
-from django.utils import timezone  # Import timezone for handling date and time
+from .models import Authentication
 
-
-
-# Set up logging for this module
 logger = logging.getLogger(__name__)
 
 class SuperAdminOnlyMiddleware:
+    """Restricts /admin/ to the SuperAdmin account.
+
+    Hardening note: this previously queried Authentication.objects.filter(
+    user=request.user).order_by('-id').first() on every /admin/ request
+    just to read that row's .user.username — which is always just
+    request.user.username, so the query was both pointless (an extra DB
+    round trip returning data the request already has) and fragile (a
+    user with zero Authentication rows — e.g. one created directly via
+    `manage.py createsuperuser` who never logged in through Login_IN —
+    would read as "no profile assigned" and get redirected away from
+    /admin/ even if they *are* SuperAdmin). Checking request.user.username
+    directly avoids both problems, and there's nothing here that writes
+    to the database, so the transaction.atomic() wrapper it had was
+    pure overhead — removed along with it.
+    """
+
     def __init__(self, get_response):
-        # Store the get_response callable for later use
         self.get_response = get_response
 
     def __call__(self, request):
-        # Begin atomic transaction to ensure database operations are safe
-        with transaction.atomic():
-            # Check if the request is targeting the admin panel and if the user is authenticated
-            if request.path.startswith('/admin/') and request.user.is_authenticated:
-                try:
-                    # Get the latest authentication record for the user
-                    user_profile = Authentication.objects.filter(user=request.user).order_by('-id').first()
+        if request.path.startswith('/admin/') and request.user.is_authenticated:
+            if request.user.username != 'SuperAdmin':
+                logger.warning(f"User {request.user.username} attempted to access the admin panel without the SuperAdmin role.")
+                return redirect('/Dashboard-Profile/')
 
-                    # If no profile exists, redirect to the dashboard
-                    if not user_profile:
-                        logger.error(f"User {request.user.username} does not have a profile assigned.")
-                        return redirect('/Dashboard-Profile/')  
-
-                    # Allow only the user with username 'SuperAdmin' to access the admin panel
-                    if user_profile.user.username != 'SuperAdmin':
-                        logger.warning(f"User {request.user.username} attempted to access the admin panel without the Superadmin role.")
-                        return redirect('/Dashboard-Profile/')  
-
-                except Exception as e:
-                    # Log any unexpected exceptions that occur during the process
-                    logger.error(f"An unexpected error occurred for user {request.user.username}: {str(e)}")
-                    return redirect('/Error/')  
-
-        # If all checks pass, process the request normally and return the response
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
 
 class AutoLogoutMiddleware:
@@ -62,6 +50,17 @@ class AutoLogoutMiddleware:
       navigation) this cuts write volume substantially without weakening
       the 10-minute timeout, since the timeout window is far larger than
       the throttle window.
+    - Looked up by session_key first (this session's own record), falling
+      back to "most recent row for this user" only for legacy rows that
+      predate session_key tracking. Previously this always used the
+      user-wide "most recent" lookup, so a second concurrent login (or
+      even just old leftover rows) for the same user could make one
+      session's idle timeout read a completely different session's
+      activity — a session that should time out silently never did, or
+      one that shouldn't could get logged out by an unrelated session
+      going idle. Tying the check to the actual browser session that
+      Django's own session framework already identifies fixes this at
+      the source rather than papering over it.
     """
 
     ACTIVITY_WRITE_THROTTLE_SECONDS = 30
@@ -73,7 +72,13 @@ class AutoLogoutMiddleware:
         auth_record = None
 
         if request.user.is_authenticated:
-            auth_record = Authentication.objects.filter(user=request.user).order_by('-activity_time').first()
+            session_key = request.session.session_key
+            if session_key:
+                auth_record = Authentication.objects.filter(
+                    user=request.user, session_key=session_key,
+                ).order_by('-activity_time').first()
+            if auth_record is None:
+                auth_record = Authentication.objects.filter(user=request.user).order_by('-activity_time').first()
 
             if auth_record:
                 time_since_last_activity = timezone.now() - auth_record.activity_time
