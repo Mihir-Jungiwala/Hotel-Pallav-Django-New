@@ -1,0 +1,48 @@
+{% if bill_maters %}
+<div class="rpt-section">
+  <h4 class="rpt-section-title">{{ heading }}</h4>
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th>Serial</th>
+        <th>Date</th>
+        <th>Bill Number</th>
+        <th>Guest Name</th>
+        {% if variant == "debit_received" %}<th>Mode Of Payment</th>{% else %}<th>Advance / Date / Amount</th>{% endif %}
+        <th>Plan</th>
+        <th>Laundry</th>
+        <th>Bill Amount</th>
+        <th>Paid Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in bill_maters %}
+        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ item.Bill_Master_Bill_Date }}</td>
+            <td>{{ item.Bill_Master_Bill_Number }}</td>
+            <td>{{ item.Bill_Master_Guest_Name }}</td>
+            {% if variant == "debit_received" %}
+              <td>{{ item.Bill_Master_Debit_Hotel_Mode_Of_Payment }}</td>
+            {% else %}
+              <td>
+                {% if item.Bill_Master_Advance_Receipt_Number %}{{ item.Bill_Master_Advance_Receipt_Number }}{% endif %}
+                {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %} / {% endif %}
+                {% if item.Bill_Master_Advance_Date %}{{ item.Bill_Master_Advance_Date }}{% endif %}
+                {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %} / {% endif %}
+                {% if item.Bill_Master_Hotel_Advance_Amounts %}Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}{% endif %}
+              </td>
+            {% endif %}
+            <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %}( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+            <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}{% endif %}</td>
+            <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+            <td>{% if item.Bill_Master_Total_Hotel_Amount >= 0 %}{{ item.Bill_Master_Total_Hotel_Amount }}{% else %}0{% endif %}</td>
+          </tr>
+        {% endif %}
+        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<tr class="rpt-page-break"><td colspan="9"></td></tr>' %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
