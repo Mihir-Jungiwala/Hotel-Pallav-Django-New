@@ -279,7 +279,27 @@ if os.environ.get('DJANGO_USE_S3', 'False') == 'True':
 # specific module instead of vanishing into stdout via bare print(e) calls.
 
 LOG_DIR = BASE_DIR / 'logs'
-LOG_DIR.mkdir(exist_ok=True)
+
+# Probe for a writable filesystem instead of assuming one. On a serverless
+# host (Vercel and similar) everything outside /tmp is read-only, so
+# LOG_DIR.mkdir() — and RotatingFileHandler trying to open a file under it —
+# would raise on every single cold start, crashing the whole app before it
+# could handle a request (confirmed root cause of a FUNCTION_INVOCATION_FAILED
+# crash on Vercel: this used to run unconditionally). Console-only logging is
+# also the *correct* approach there, not just a fallback — Vercel (and most
+# serverless/container platforms) captures stdout/stderr automatically and
+# shows it in their own log viewer.
+try:
+    LOG_DIR.mkdir(exist_ok=True)
+    _probe = LOG_DIR / '.write_test'
+    _probe.write_text('')
+    _probe.unlink()
+    _LOGS_WRITABLE = True
+except OSError:
+    _LOGS_WRITABLE = False
+
+_log_handlers = ['console'] + (['app_file', 'error_file'] if _LOGS_WRITABLE else [])
+_error_log_handlers = ['console'] + (['error_file'] if _LOGS_WRITABLE else [])
 
 LOGGING = {
     'version': 1,
@@ -300,43 +320,47 @@ LOGGING = {
             'formatter': 'simple' if DEBUG else 'verbose',
             'level': 'DEBUG' if DEBUG else 'INFO',
         },
-        'app_file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOG_DIR / 'app.log',
-            'maxBytes': 10 * 1024 * 1024,  # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-            'level': 'INFO',
-        },
-        'error_file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOG_DIR / 'error.log',
-            'maxBytes': 10 * 1024 * 1024,
-            'backupCount': 10,
-            'formatter': 'verbose',
-            'level': 'ERROR',
-        },
+        **({
+            'app_file': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': LOG_DIR / 'app.log',
+                'maxBytes': 10 * 1024 * 1024,  # 10 MB
+                'backupCount': 5,
+                'formatter': 'verbose',
+                'level': 'INFO',
+            },
+            'error_file': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': LOG_DIR / 'error.log',
+                'maxBytes': 10 * 1024 * 1024,
+                'backupCount': 10,
+                'formatter': 'verbose',
+                'level': 'ERROR',
+            },
+        } if _LOGS_WRITABLE else {}),
     },
     'root': {
-        'handlers': ['console', 'app_file', 'error_file'],
+        'handlers': _log_handlers,
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'app_file', 'error_file'],
+            'handlers': _log_handlers,
             'level': 'INFO',
             'propagate': False,
         },
         'django.request': {
-            'handlers': ['console', 'error_file'],
+            'handlers': _error_log_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # One logger per app so a grep of logs/app.log or logs/error.log
-        # for "Bill_Master" (etc.) isolates that app's activity.
+        # for "Bill_Master" (etc.) isolates that app's activity — when the
+        # filesystem is writable. On a read-only host, console (captured by
+        # the platform's own log viewer) is the only handler anyway.
         **{
             app_name: {
-                'handlers': ['console', 'app_file', 'error_file'],
+                'handlers': _log_handlers,
                 'level': 'INFO',
                 'propagate': False,
             }

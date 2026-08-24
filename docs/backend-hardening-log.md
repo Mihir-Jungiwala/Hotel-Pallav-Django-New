@@ -1203,3 +1203,59 @@ re-run once more: still 114/114 passing, no regressions from the
 
 ---
 
+## 🐛 CRITICAL: fixed a crash-on-every-request bug found on the first real Vercel deploy
+
+The user actually deployed to Vercel after the pass above and got
+`FUNCTION_INVOCATION_FAILED` on every route — a real production crash
+this environment's checks did not catch, because none of them ran on an
+actual read-only filesystem.
+
+**Root cause:** `Main/settings.py` had `LOG_DIR.mkdir(exist_ok=True)`
+running unconditionally at module import time, and the `LOGGING` dict
+unconditionally configured `RotatingFileHandler`s pointed at files under
+that directory. Both require a writable filesystem. Vercel Functions are
+read-only everywhere except `/tmp`, so `LOG_DIR.mkdir()` raised
+`OSError: [Errno 30] Read-only file system` on the very first line of
+settings that touched disk — which runs on every cold start, meaning
+**every single request crashed identically**, exactly matching the
+`FUNCTION_INVOCATION_FAILED` on every route the user reported. This was
+missed in the "Vercel readiness pass" above because that pass focused on
+`STATIC_ROOT`/`MEDIA_ROOT` (already correctly made S3/CDN-aware) and
+never audited whether the *logging* config also touched disk — it did.
+
+**Fix:** probe whether `LOG_DIR` is actually writable (try `mkdir` +
+write + delete a throwaway file, catching `OSError`) instead of assuming
+it. When it's not writable, the `app_file`/`error_file` handlers are
+omitted from the `LOGGING` dict entirely and every logger (root, django,
+django.request, every app logger) falls back to `console` only. This
+isn't just a fallback — console output is the *correct* approach on a
+serverless host, since Vercel (and most container/serverless platforms)
+captures stdout/stderr automatically and shows it in their own log
+viewer. On a normal writable host, behavior is unchanged: file logging
+still works exactly as before.
+
+**Verification:** Since this sandbox runs as root, `chmod` cannot
+actually simulate a read-only directory (root bypasses Unix permission
+checks — confirmed by testing: a `chmod 555 logs/` directory was still
+writable). Instead, verified with a monkeypatch that forces every
+`Path.mkdir()`/`Path.write_text()` call under `logs/` to raise
+`OSError(30, 'Read-only file system')`, then: (1) confirmed
+`django.setup()` completes without raising, (2) confirmed
+`settings.LOGGING['handlers']` excludes `app_file`/`error_file` and
+`settings.LOGGING['root']['handlers'] == ['console']`, (3) confirmed a
+logger call (`logging.getLogger('Bill_Master').info(...)`) does not
+raise, and (4) confirmed a full request through the WSGI app (`Client().get('/')`)
+completes and returns a normal Django HTTP response rather than
+crashing. Then restored normal (writable) conditions and re-ran the full
+114-test suite — still 114/114 passing, no regressions.
+
+**Lesson for future passes:** "the app works when I test it" is not
+sufficient evidence for a serverless target — this bug was invisible to
+every check run in this environment (which always has a writable
+filesystem) and was only caught because the user actually deployed. Any
+future settings.py change should be checked against "does this touch
+disk at import time, and does it stay ok if that disk is read-only,"
+not just against a passing local test suite.
+
+---
+
