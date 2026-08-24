@@ -736,3 +736,164 @@ Full cross-app smoke test still 200s throughout.
 
 ---
 
+## Bill_Master app — full pass
+
+This is the app the original production-readiness audit flagged as
+having the most bugs, and the money-calculation logic here is the most
+complex in the codebase (advance payments, bill totals, debit
+installments, refunds — all cross-referencing each other). Unlike
+Revenue/Expense, **all money fields in this app were already
+`DecimalField`** (confirmed by reading `models.py` in full and
+cross-checking every `Sum()` call in `Dashboard/views.py`,
+`Reports/views.py`, and `Bill_Master/views.py`), so the CharField→Sum()
+corruption bug class from Revenue/Expense does not apply here. This app
+also has no per-user ownership model (bills/advances aren't "owned" by
+the staff member who entered them), so the User-instance-vs-string
+ownership bug from Revenue/Expense/Shift_Handover doesn't apply either.
+The bugs here are calculation bugs: wrong variable used in a formula,
+copy-pasted across hotel/food or across four installment slots.
+
+### 🐛 CONFIRMED: food advance balance corrupted by a copy-paste bug (`Bill_Master_Bill_Add`)
+
+This is the exact bug the production-readiness audit flagged. In the
+"Calculate advance food balance amount" branch:
+
+```python
+if food_advance_amount > abs(bill_master_food_total_amount):
+    advance_food_balance_amount = food_advance_amount - abs(bill_master_hotel_total_amount)  # BUG
+```
+
+`bill_master_hotel_total_amount` (the HOTEL total) was subtracted from
+the food advance amount instead of `bill_master_food_total_amount` (the
+FOOD total) — a straight copy-paste error from the hotel branch just
+above it. Whenever a guest's food advance exceeded the food total *and*
+the hotel and food totals differed, `Bill_Master_Advance_Food_Amount`
+(and everything downstream of it — `Bill_Master_Advance_Delete_Food_Amount`,
+the linked advance record's balance) was silently wrong.
+
+Confirmed by direct reproduction: hotel total 100 / food total 50,
+hotel advance 2000 / food advance 700 → before the fix the food balance
+came out using the hotel total. Fixed to use
+`bill_master_food_total_amount`. Covered by
+`BillAddCalculationTests.test_food_advance_balance_uses_food_total_not_hotel_total`.
+
+### 🐛 CONFIRMED: bill update's food balance driven by the HOTEL mode of payment (`Bill_Master_Bill_Update`)
+
+```python
+queryset.Bill_Master_Balance_Hotel_Amount = bill_master_hotel_total_amount if bill_master_hotel_mod == 'Debit' else 0
+queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount if bill_master_hotel_mod == 'Debit' else 0  # BUG
+```
+
+The food balance line reused `bill_master_hotel_mod` instead of
+`bill_master_food_mod`. Confirmed against `Bill_Master_Bill_Add`'s own
+`create()` call, which correctly uses `bill_master_food_mod` for the
+food balance — proving the Update view's version is the inconsistent
+one. Practical effect: updating a bill where the hotel side is on
+Debit but the food side is Cash incorrectly carried a food balance
+forward as if food were also on Debit (or the reverse). Fixed; covered
+by `BillUpdateCalculationTests.test_food_balance_driven_by_food_mod_not_hotel_mod`.
+
+### 🐛 CONFIRMED: debit installment amounts silently zeroed by a copy-paste guard bug (`Bill_Master_Debit_Bill_Add`)
+
+Every one of the 8 installment amount fields (`bill_master_debit_hotel_amount_1`
+through `_4`, and the food equivalents) parsed its own POST field but
+guarded on the **base (unsuffixed)** field's truthiness instead of its
+own:
+
+```python
+bill_master_debit_hotel_amount_3 = Decimal(request.POST.get('bill_master_debit_hotel_amount_3', '0')) \
+    if request.POST.get('bill_master_debit_hotel_amount', '') else Decimal('0')  # checks the WRONG field
+```
+
+If the 1st installment was left blank on a form that only used the 3rd
+or 4th installment slot, every later installment's real value was
+discarded and silently stored as 0 — a full data-loss bug for any
+multi-installment debit bill that didn't start filling from the 1st
+slot. Confirmed by reproduction: posting only
+`bill_master_debit_hotel_amount_3=250` with the base field blank stored
+0 before the fix. Each guard now checks its own field. Covered by
+`DebitBillAddInstallmentTests.test_later_installment_saved_even_when_first_is_blank`.
+
+### 🔒 Client-submitted totals no longer trusted for pure-addition fields
+
+Three places stored a `Total`/advance-total field straight from a POST
+value instead of deriving it from the amounts actually being saved —
+the same "don't trust client math" issue fixed in Shift_Handover
+(cash-count totals), except here it's simple addition rather than
+denomination math, so the fix is a one-line recompute rather than a
+full server-side recalculation:
+
+- `Bill_Master_Advance_Add` / `Bill_Master_Advance_Update`: `Total` is
+  now always `hotel_advance_amount + food_advance_amount`, never the
+  client-submitted `total` field.
+- `Bill_Master_Advance_Refund`: `bill_master.Total` is now always
+  `hotel_balance_amount + food_balance_amount` (the balances actually
+  being saved), matching the same convention already used elsewhere in
+  this app (e.g. `Bill_Master_Bill_Add`'s `advance_record.Total =
+  advance_record.Hotel_Balance_Amount + advance_record.Food_Balance_Amount`) —
+  not a guessed formula, but the pattern this app already uses
+  consistently everywhere else.
+
+**Deliberately NOT touched:** `Bill_Master_Bill_Add` / `Bill_Master_Bill_Update`'s
+`bill_master_hotel_total_amount` / `bill_master_food_total_amount`
+fields are still taken from the client. Their real formula (read from
+the template's JS) is asymmetric and domain-specific — hotel total
+includes a 12% GST auto-computed client-side and subtracts the plan
+amount, while food total adds the same plan amount and subtracts the
+same laundry amount that was added on the hotel side, and both then
+subtract their respective advance amounts. Blindly reimplementing that
+cross-allocation server-side without a domain-authoritative spec risked
+making the total *less* accurate, not more, so it was left alone. This
+is a known gap, flagged here for visibility rather than guessed at.
+
+### 🐛 Defensive fixes: GET-crash, null-field crash, missing atomicity
+
+- `Bill_Master_Advance_Delete` and `Bill_Master_Bill_Delete` had no
+  non-POST branch at all — a GET request fell through the function with
+  an implicit `return None`, which Django turns into a hard
+  `ValueError: ... didn't return an HttpResponse object`. Both now
+  redirect immediately on non-POST. Covered by
+  `AdvanceDeleteTests.test_get_request_does_not_crash` and
+  `BillDeleteTests.test_get_request_does_not_crash`.
+- `Bill_Master_Bill_Delete` called `Decimal(bill_delete.Bill_Master_Advance_Delete_Hotel_Amount)`
+  with no guard against `None`, even though the field is nullable
+  (`null=True`). Guarded with `or 0`. Covered by
+  `BillDeleteTests.test_null_advance_delete_amount_does_not_crash`.
+- `Bill_Master_Bill_Delete`'s two saves (updating the linked advance
+  record's balance, then deleting the bill) are now wrapped in
+  `transaction.atomic()` — previously a failure between the two writes
+  could leave the advance record updated but the bill still present, or
+  vice versa.
+- `Bill_Master_Debit_Bill_Add`'s POST handling — which can create a new
+  `Bill_Master_ADD_Advance` record for an overpayment *and* then save
+  the debit bill's own fields — is now wrapped in `transaction.atomic()`
+  too. Previously a failure in `queryset.save()` after the advance
+  record was already created would leave an orphan advance record with
+  no bill referencing its formatted receipt number.
+- Added negative-amount validation to `Bill_Master_Advance_Add`,
+  `Bill_Master_Advance_Update`, and `Bill_Master_Advance_Refund` (a
+  negative advance/refund amount is nonsensical and was previously
+  accepted silently).
+
+### 🔒 Debug prints and root-logger calls replaced with the app's named logger
+
+Every `print(e)` and every bare `logging.error(...)`/`logging.info(...)`
+(module-level, not the app's own `logger = logging.getLogger(__name__)`)
+in this file replaced with `logger.error(...)`/`logger.info(...)`, so
+Bill_Master errors land in the per-app log file configured in
+`Main/settings.py` instead of being swallowed by `print()` or routed to
+the unconfigured root logger.
+
+**Verification:** `manage.py check` clean (via the existing xhtml2pdf
+sandbox stub — this app has no PDF-generation views of its own, only a
+plain `FileField` for uploading a scanned invoice, so no PDF template
+check was needed here). 11 new tests in `Bill_Master/tests.py` covering
+both confirmed calculation bugs, the installment data-loss bug, the
+three total-recompute fixes, the GET-crash fixes, and the null-field
+guard — all passing. Full cross-app suite (Authentication, Company,
+Staff_Profile, Shift_Handover, Revenue, Expense, Bill_Master) re-run
+together: 110 tests, all passing, no regressions. Smoke test confirms
+every Bill_Master list/add page still returns 200.
+
+---
+

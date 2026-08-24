@@ -13,24 +13,29 @@ from .models import Bill_Master_ADD_Advance, Bill_Master_ADD_Bill, Company_Profi
 from Company.models import Company_Profile
 from django.shortcuts import get_object_or_404
 
-@login_required(login_url='Login_In') 
+@login_required(login_url='Login_In')
 def Bill_Master_Advance_Delete(request, id):
     try:
-        if request.method == 'POST':  # Check if the request method is POST (form submission)
-            # Retrieve the bill master record to be deleted
-            bill_master = Bill_Master_ADD_Advance.objects.get(id=id)
+        if request.method != 'POST':
+            # Was: no else/non-POST branch at all, so a GET request fell
+            # through the whole function with an implicit `return None`,
+            # which Django turns into a hard ValueError.
+            return redirect('/Bill-Master-Advance-Profile/')
 
-            # Check if Hotel_Advance_Amount equals Hotel_Balance_Amount and Food_Advance_Amount equals Food_Balance_Amount
-            if bill_master.Hotel_Advance_Amount == bill_master.Hotel_Balance_Amount and bill_master.Food_Advance_Amount == bill_master.Food_Balance_Amount:
-                bill_master.delete()  # Delete the retrieved bill master record
-                return redirect('/Bill-Master-Advance-Profile/')  # Redirect to the advance profile page after deletion
-            else:
-                return redirect('/Bill-Master-Advance-Profile/')  # Redirect to the same page if conditions are not met
+        # Retrieve the bill master record to be deleted
+        bill_master = Bill_Master_ADD_Advance.objects.get(id=id)
+
+        # Check if Hotel_Advance_Amount equals Hotel_Balance_Amount and Food_Advance_Amount equals Food_Balance_Amount
+        if bill_master.Hotel_Advance_Amount == bill_master.Hotel_Balance_Amount and bill_master.Food_Advance_Amount == bill_master.Food_Balance_Amount:
+            bill_master.delete()  # Delete the retrieved bill master record
+        else:
+            messages.warning(request, 'Cannot delete the record. Advance amount does not match balance amount.')
+        return redirect('/Bill-Master-Advance-Profile/')  # Redirect to the advance profile page
 
     except Bill_Master_ADD_Advance.DoesNotExist:
         return render(request, 'error_page.html', {'error_message': 'User Profile not found.'})
     except Exception as e:
-        print(e)  # Print any error that occurs for debugging purposes
+        logger.error(f'Error deleting advance record {id}: {e}')
         return render(request, 'error_page.html', {'error_message': 'An error occurred while deleting the user profile.'})
 
 @login_required(login_url='Login_In') 
@@ -42,7 +47,7 @@ def Bill_Master_Advance_Profile(request):
         context = {'advance_profiles': queryset}  # Create context containing the retrieved bill master records
         return render(request, "Bill_Master_Advance_Profile.html", context)  # Render the profile template with context data
     except Exception as e:
-        print(e)  # Print any error that occurs for debugging purposes
+        logger.error(f'Error fetching advance profiles: {e}')
         return render(request, "error_page.html", {'error_message': 'An error occurred while fetching user profiles. Please try again later.'})
 
 logger = logging.getLogger(__name__)
@@ -71,7 +76,14 @@ def Bill_Master_Advance_Add(request):
                     hotel_advance_mod = request.POST.get('hotel_advance_mod', '')
                     food_advance_amount = Decimal(request.POST.get('food_advance_amount', '0')) if request.POST.get('food_advance_amount', '') else Decimal('0')
                     food_advance_mod = request.POST.get('food_advance_mod', '')
-                    total =Decimal(request.POST.get('total', '0')) if request.POST.get('total', '') else Decimal('0')
+                    if hotel_advance_amount < 0 or food_advance_amount < 0:
+                        messages.error(request, 'Advance amounts cannot be negative.')
+                        return render(request, "Bill_Master_Advance_Add.html", {"companies": companies})
+                    # Total was read directly from the client-submitted 'total'
+                    # field instead of being derived from the two amounts that
+                    # were actually saved, so a stale/forged value could be
+                    # stored. Always recompute it server-side.
+                    total = hotel_advance_amount + food_advance_amount
                     advance_Reference_Name = request.POST.get('advance_Reference_Name', '')
                     advance_Reference_Mobile_Number = request.POST.get('advance_Reference_Mobile_Number', '')
                     advance_Instruction = request.POST.get('advance_Instruction', '')
@@ -115,6 +127,7 @@ def Bill_Master_Advance_Add(request):
                     return redirect('/Bill-Master-Advance-Profile/')
             except Exception as e:
                 logger.error(f"Error adding Bill Master Advance: {e}")  # Log any error that occurs for debugging purposes
+                messages.error(request, 'An error occurred while adding the advance record. Please check the values entered.')
 
         # Render the form template for adding a new bill master record
         return render(request, "Bill_Master_Advance_Add.html", {"companies": companies})
@@ -151,7 +164,12 @@ def Bill_Master_Advance_Update(request, id):
             hotel_advance_mod = request.POST.get('hotel_advance_mod', '')
             food_advance_amount = Decimal(request.POST.get('food_advance_amount', '0')) if request.POST.get('food_advance_amount', '') else Decimal('0')
             food_advance_mod = request.POST.get('food_advance_mod', '')
-            total = Decimal(request.POST.get('total', '0'))
+            if hotel_advance_amount < 0 or food_advance_amount < 0:
+                messages.error(request, 'Advance amounts cannot be negative.')
+                return redirect('/Bill-Master-Advance-Profile/')
+            # Was: total read directly from the client-submitted 'total' field.
+            # Always recompute from the amounts that are actually saved.
+            total = hotel_advance_amount + food_advance_amount
             advance_Reference_Name = request.POST.get('advance_Reference_Name', '')
             advance_Reference_Mobile_Number = request.POST.get('advance_Reference_Mobile_Number', '')
             advance_Instruction = request.POST.get('advance_Instruction', '')
@@ -237,7 +255,6 @@ def Bill_Master_Advance_Refund(request, id):
             refund_guest_name = request.POST.get('refund_guest_name', '')
             refund_mobile_number = request.POST.get('refund_Mobile_Number', '')
             refund_instruction = request.POST.get('refund_Instruction', '')
-            refund_total_amount_str = request.POST.get('refund_total_amount', '')
 
             # Parse the payment date if provided
             if refund_payment_date_str:
@@ -248,7 +265,9 @@ def Bill_Master_Advance_Refund(request, id):
             # Convert refund amounts to Decimal
             hotel_refund_amount = Decimal(hotel_refund_amount_str) if hotel_refund_amount_str else Decimal(0)
             food_refund_amount = Decimal(food_refund_amount_str) if food_refund_amount_str else Decimal(0)
-            refund_total_amount = Decimal(refund_total_amount_str) if refund_total_amount_str else Decimal(0)
+            if hotel_refund_amount < 0 or food_refund_amount < 0:
+                messages.error(request, 'Refund amounts cannot be negative.')
+                return redirect(request.path_info)
             # Check if refund amount exceeds advance amount
             if hotel_refund_amount > bill_master.Hotel_Advance_Amount or food_refund_amount > bill_master.Food_Advance_Amount:
                 # If refund amount exceeds advance amount, redirect back to the same page
@@ -258,7 +277,6 @@ def Bill_Master_Advance_Refund(request, id):
             # Calculate balance amount
             hotel_balance_amount = bill_master.Hotel_Balance_Amount - hotel_refund_amount
             food_balance_amount = bill_master.Food_Balance_Amount - food_refund_amount
-            
 
             # Update the existing bill master record with the new refund details
             bill_master.Refund_Payment_Date = refund_payment_date
@@ -269,7 +287,11 @@ def Bill_Master_Advance_Refund(request, id):
             bill_master.Refund_Guest_Name = refund_guest_name
             bill_master.Refund_Mobile_Number = refund_mobile_number
             bill_master.Refund_Instruction = refund_instruction
-            bill_master.Total= refund_total_amount
+            # Was: bill_master.Total set directly from the client-submitted
+            # 'refund_total_amount' field. Always derive it from the balance
+            # amounts actually being saved (same convention used everywhere
+            # else in this app, e.g. Bill_Master_Bill_Add's advance_record.Total).
+            bill_master.Total = hotel_balance_amount + food_balance_amount
 
 
             # Update balance amount based on refund amount
@@ -291,7 +313,7 @@ def Bill_Master_Advance_Refund(request, id):
 
     except Exception as e:
         # Handle other exceptions
-        print(e)  # Print any error that occurs for debugging purposes
+        logger.error(f'Error adding refund details for advance {id}: {e}')
         messages.error(request, 'An error occurred while adding refund details.')
 
     # Render the template with the bill master data
@@ -359,7 +381,7 @@ def Bill_Master_Bill_Profile(request):
         context = {'bill_profiles': queryset}  # Create context containing the retrieved bill master records
         return render(request, "Bill_Master_Bill_Profile.html", context)  # Render the profile template with context data
     except Exception as e:
-        print(e)  # Print any error that occurs for debugging purposes
+        logger.error(f'Error fetching bill profiles: {e}')
         return render(request, "error_page.html", {'error_message': 'An error occurred while fetching user profiles. Please try again later.'})
 
 
@@ -381,28 +403,35 @@ def Bill_Master_Bill_Profile(request):
 @login_required(login_url='Login_In')
 def Bill_Master_Bill_Delete(request, advance_id):
     try:
-        if request.method == 'POST':
-            # Retrieve the bill master record to be deleted
-            bill_delete = get_object_or_404(Bill_Master_ADD_Bill, id=advance_id)
-              # Check if refund details are already present
-            if bill_delete.Bill_Master_Debit_Bill_Date is not None:
-                # If refund details are present, redirect to the bill master profile page
-                return redirect('/Bill-Master-Bill-Profile/')
-            
-            # Retrieve the advance delete hotel and food amounts directly from the bill record
-            hotel_advance_delete_amount = Decimal(bill_delete.Bill_Master_Advance_Delete_Hotel_Amount)
-            food_advance_delete_amount = Decimal(bill_delete.Bill_Master_Advance_Delete_Food_Amount)
+        if request.method != 'POST':
+            # Was: no non-POST branch, so a GET request fell through with an
+            # implicit `return None`, which Django turns into a hard error.
+            return redirect('/Bill-Master-Bill-Profile/')
 
+        # Retrieve the bill master record to be deleted
+        bill_delete = get_object_or_404(Bill_Master_ADD_Bill, id=advance_id)
+        # Check if refund details are already present
+        if bill_delete.Bill_Master_Debit_Bill_Date is not None:
+            # If refund details are present, redirect to the bill master profile page
+            return redirect('/Bill-Master-Bill-Profile/')
+
+        # Retrieve the advance delete hotel and food amounts directly from the
+        # bill record. Guard against None (the field is nullable) so this
+        # can't crash with `decimal.InvalidOperation` / TypeError.
+        hotel_advance_delete_amount = Decimal(bill_delete.Bill_Master_Advance_Delete_Hotel_Amount or 0)
+        food_advance_delete_amount = Decimal(bill_delete.Bill_Master_Advance_Delete_Food_Amount or 0)
+
+        with transaction.atomic():
             # Check if the deleted bill record is associated with an advance
             if bill_delete.Bill_Master_Advance_Receipt_Number:
                 advance_record = Bill_Master_ADD_Advance.objects.filter(Advance_Receipt_Number=bill_delete.Bill_Master_Advance_Receipt_Number).first()
 
                 if advance_record:
                     # Calculate the new hotel and food balance amounts for the advance record
-                    new_hotel_balance = hotel_advance_delete_amount 
-                    new_food_balance = food_advance_delete_amount 
+                    new_hotel_balance = hotel_advance_delete_amount
+                    new_food_balance = food_advance_delete_amount
 
-                    # Update the balance amounts in the advance record  
+                    # Update the balance amounts in the advance record
                     advance_record.Hotel_Balance_Amount = new_hotel_balance
                     advance_record.Food_Balance_Amount = new_food_balance
                     advance_record.Total = new_hotel_balance + new_food_balance
@@ -411,17 +440,17 @@ def Bill_Master_Bill_Delete(request, advance_id):
             # Delete the bill record
             bill_delete.delete()
 
-            # Redirect to the bill profile page
-            return redirect('/Bill-Master-Bill-Profile/')
+        # Redirect to the bill profile page
+        return redirect('/Bill-Master-Bill-Profile/')
 
     except Bill_Master_ADD_Bill.DoesNotExist:
         # Log an error and return an error page if the bill record does not exist
-        logging.error(f"Bill record with id {advance_id} not found.")
+        logger.error(f"Bill record with id {advance_id} not found.")
         return render(request, 'error_page.html', {'error_message': f"Bill record with id {advance_id} not found."})
 
     except Exception as e:
         # Log any other exceptions and return an error page
-        logging.error(f"Error deleting bill record with id {advance_id}: {e}")
+        logger.error(f"Error deleting bill record with id {advance_id}: {e}")
         return render(request, 'error_page.html', {'error_message': f"An error occurred while deleting the bill record with id {advance_id}."})
 
 
@@ -497,9 +526,15 @@ def Bill_Master_Bill_Add(request, advance_id=None):
                     advance_hotel_balance_amount = bill_master_hotel_total_amount - hotel_advance_amount
 
 
-                # Calculate advance hotel balance amount
+                # Calculate advance food balance amount
+                # Was: `food_advance_amount - abs(bill_master_hotel_total_amount)`
+                # — a copy-paste bug that subtracted the HOTEL total from the
+                # food advance amount instead of the FOOD total, corrupting
+                # the food-side advance balance whenever food_advance_amount
+                # exceeded the food total. Confirmed by direct code reading;
+                # this is the exact bug the production-readiness audit flagged.
                 if food_advance_amount > abs(bill_master_food_total_amount):
-                    advance_food_balance_amount = food_advance_amount - abs(bill_master_hotel_total_amount)
+                    advance_food_balance_amount = food_advance_amount - abs(bill_master_food_total_amount)
                 else:
                     advance_food_balance_amount = bill_master_food_total_amount - food_advance_amount
 
@@ -667,8 +702,11 @@ def Bill_Master_Bill_Update(request, id):
 
             queryset.Bill_Master_Balance_Hotel_Amount = bill_master_hotel_total_amount if bill_master_hotel_mod == 'Debit' else 0
 
-
-            queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount if bill_master_hotel_mod == 'Debit' else 0
+            # Was: `bill_master_hotel_mod` — a copy-paste bug that decided the
+            # FOOD balance based on the HOTEL mode of payment. Confirmed by
+            # comparing against Bill_Master_Bill_Add's create() call, which
+            # correctly uses bill_master_food_mod for the food balance.
+            queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount if bill_master_food_mod == 'Debit' else 0
 
             queryset.Bill_Master_Reference_Name = bill_master_name
             queryset.Bill_Master_Reference_Mobile_Number = bill_master_Number
@@ -716,8 +754,7 @@ def Bill_Master_Debit_Bill_Profile(request):
         return render(request, "Bill_Master_Debit_Bill_Profile.html", context)
 
     except Exception as e:
-        # Print the exception and render an error page if an exception occurs
-        print(e)
+        logger.error(f'Error fetching debit bill profiles: {e}')
         return render(request, "error_page.html", {'error_message': 'An error occurred while fetching user profiles. Please try again later.'})
 
 
@@ -768,11 +805,20 @@ def Bill_Master_Debit_Bill_Add(request, id):
 
 
 
+                # Was: every `_1`.._4` field's guard checked the truthiness of
+                # the base `bill_master_debit_hotel_amount` field instead of
+                # its own field, e.g. `bill_master_debit_hotel_amount_3`'s
+                # guard read `request.POST.get('bill_master_debit_hotel_amount', '')`.
+                # If the first installment was left blank while a later
+                # installment (2nd/3rd/4th) had a real value, that value was
+                # silently discarded and stored as 0 — a copy-paste bug
+                # repeated across all four hotel installments. Each guard now
+                # checks its own field.
                 bill_master_debit_hotel_amount = Decimal(request.POST.get('bill_master_debit_hotel_amount', '0')) if request.POST.get('bill_master_debit_hotel_amount', '') else Decimal('0')
-                bill_master_debit_hotel_amount_1 = Decimal(request.POST.get('bill_master_debit_hotel_amount_1', '0')) if request.POST.get('bill_master_debit_hotel_amount', '') else Decimal('0')
-                bill_master_debit_hotel_amount_2 = Decimal(request.POST.get('bill_master_debit_hotel_amount_2', '0')) if request.POST.get('bill_master_debit_hotel_amount', '') else Decimal('0')
-                bill_master_debit_hotel_amount_3= Decimal(request.POST.get('bill_master_debit_hotel_amount_3', '0')) if request.POST.get('bill_master_debit_hotel_amount', '') else Decimal('0')
-                bill_master_debit_hotel_amount_4 = Decimal(request.POST.get('bill_master_debit_hotel_amount_4', '0')) if request.POST.get('bill_master_debit_hotel_amount', '') else Decimal('0')
+                bill_master_debit_hotel_amount_1 = Decimal(request.POST.get('bill_master_debit_hotel_amount_1', '0')) if request.POST.get('bill_master_debit_hotel_amount_1', '') else Decimal('0')
+                bill_master_debit_hotel_amount_2 = Decimal(request.POST.get('bill_master_debit_hotel_amount_2', '0')) if request.POST.get('bill_master_debit_hotel_amount_2', '') else Decimal('0')
+                bill_master_debit_hotel_amount_3 = Decimal(request.POST.get('bill_master_debit_hotel_amount_3', '0')) if request.POST.get('bill_master_debit_hotel_amount_3', '') else Decimal('0')
+                bill_master_debit_hotel_amount_4 = Decimal(request.POST.get('bill_master_debit_hotel_amount_4', '0')) if request.POST.get('bill_master_debit_hotel_amount_4', '') else Decimal('0')
         
 
                 bill_master_debit_hotel_mod = request.POST.get('bill_master_debit_hotel_mod', '')
@@ -786,11 +832,13 @@ def Bill_Master_Debit_Bill_Add(request, id):
                 select_company_id = request.POST.get('select_company_id', None)
 
                 bill_Number = request.POST.get('bill_Number', '')                     
+                # Same copy-paste bug as the hotel installments above, fixed
+                # the same way: each guard checks its own field.
                 bill_master_debit_food_amount = Decimal(request.POST.get('bill_master_debit_food_amount', '0')) if request.POST.get('bill_master_debit_food_amount', '') else Decimal('0')
-                bill_master_debit_food_amount_1 = Decimal(request.POST.get('bill_master_debit_food_amount_1', '0')) if request.POST.get('bill_master_debit_food_amount', '') else Decimal('0')
-                bill_master_debit_food_amount_2 = Decimal(request.POST.get('bill_master_debit_food_amount_2', '0')) if request.POST.get('bill_master_debit_food_amount', '') else Decimal('0')
-                bill_master_debit_food_amount_3 = Decimal(request.POST.get('bill_master_debit_food_amount_3', '0')) if request.POST.get('bill_master_debit_food_amount', '') else Decimal('0')
-                bill_master_debit_food_amount_4 = Decimal(request.POST.get('bill_master_debit_food_amount_4', '0')) if request.POST.get('bill_master_debit_food_amount', '') else Decimal('0')
+                bill_master_debit_food_amount_1 = Decimal(request.POST.get('bill_master_debit_food_amount_1', '0')) if request.POST.get('bill_master_debit_food_amount_1', '') else Decimal('0')
+                bill_master_debit_food_amount_2 = Decimal(request.POST.get('bill_master_debit_food_amount_2', '0')) if request.POST.get('bill_master_debit_food_amount_2', '') else Decimal('0')
+                bill_master_debit_food_amount_3 = Decimal(request.POST.get('bill_master_debit_food_amount_3', '0')) if request.POST.get('bill_master_debit_food_amount_3', '') else Decimal('0')
+                bill_master_debit_food_amount_4 = Decimal(request.POST.get('bill_master_debit_food_amount_4', '0')) if request.POST.get('bill_master_debit_food_amount_4', '') else Decimal('0')
        
                 bill_master_debit_food_mod = request.POST.get('bill_master_debit_food_mod', '')
                 bill_master_debit_food_mod_1 = request.POST.get('bill_master_debit_food_mod_1', '')
@@ -849,55 +897,61 @@ def Bill_Master_Debit_Bill_Add(request, id):
                 queryset.Bill_Master_Balance_Hotel_Amount = max(0, -bill_master_hotel_remaining_balance)
                 queryset.Bill_Master_Balance_Food_Amount = max(0, -bill_master_food_remaining_balance)
 
-                if select_company_id:
-                    try:
-                        select_company = Company_Profile.objects.get(pk=select_company_id)
-                    except Company_Profile.DoesNotExist:
-                        logging.error(f"Company with id {select_company_id} does not exist")
-                        return render(request, "Bill_Master_Advance_Add.html", {"companies": companies, "error": "Selected company does not exist."})
+                # Wrapped in an atomic transaction: previously the new
+                # Bill_Master_ADD_Advance record (for excess payment) could be
+                # created and then queryset.save() could fail afterward,
+                # leaving an orphan advance record with no bill referencing
+                # its formatted receipt number.
+                with transaction.atomic():
+                    if select_company_id:
+                        try:
+                            select_company = Company_Profile.objects.get(pk=select_company_id)
+                        except Company_Profile.DoesNotExist:
+                            logger.error(f"Company with id {select_company_id} does not exist")
+                            return render(request, "Bill_Master_Advance_Add.html", {"companies": companies, "error": "Selected company does not exist."})
 
-                    if bill_master_hotel_remaining_balance > 0 or bill_master_food_remaining_balance > 0:
-                        formatted_advance_Receipt_Number = f"Excessive / {bill_Number}"
-                        hotel_advance_amount = max(0, bill_master_hotel_remaining_balance)
-                        food_advance_amount = max(0, bill_master_food_remaining_balance)
+                        if bill_master_hotel_remaining_balance > 0 or bill_master_food_remaining_balance > 0:
+                            formatted_advance_Receipt_Number = f"Excessive / {bill_Number}"
+                            hotel_advance_amount = max(0, bill_master_hotel_remaining_balance)
+                            food_advance_amount = max(0, bill_master_food_remaining_balance)
 
-                        # Set Hotel_Advance_MOD and Food_Advance_MOD to None if the corresponding balance is not positive
-                        hotel_advance_mod = bill_master_debit_hotel_mod if bill_master_hotel_remaining_balance > 0 else None
-                        food_advance_mod = bill_master_debit_food_mod if bill_master_food_remaining_balance > 0 else None
+                            # Set Hotel_Advance_MOD and Food_Advance_MOD to None if the corresponding balance is not positive
+                            hotel_advance_mod = bill_master_debit_hotel_mod if bill_master_hotel_remaining_balance > 0 else None
+                            food_advance_mod = bill_master_debit_food_mod if bill_master_food_remaining_balance > 0 else None
 
-                        # Set the balance amounts to 0 if they are negative
-                        hotel_balance_amount = max(0, bill_master_hotel_remaining_balance)
-                        food_balance_amount = max(0, bill_master_food_remaining_balance)
+                            # Set the balance amounts to 0 if they are negative
+                            hotel_balance_amount = max(0, bill_master_hotel_remaining_balance)
+                            food_balance_amount = max(0, bill_master_food_remaining_balance)
 
-                        # Create the new advance record only if at least one of the amounts is positive
-                        if hotel_advance_amount > 0 or food_advance_amount > 0:
-                            new_advance = Bill_Master_ADD_Advance.objects.create(
-                                Advance_Receipt_Number=formatted_advance_Receipt_Number,
-                                Advance_Guest_Name=select_company.Company_Name if select_company else '',
-                                Advance_Mobile_Number=bill_master_debit_Number,
-                                Advance_Bill_Company=select_company,
-                                Advance_Payment_Date=debit_bill_date,
-                                Hotel_Advance_Amount=hotel_advance_amount,
-                                Hotel_Advance_MOD=hotel_advance_mod,
-                                Food_Advance_Amount=food_advance_amount,
-                                Food_Advance_MOD=food_advance_mod,
-                                Total=hotel_advance_amount + food_advance_amount,
-                                Hotel_Balance_Amount=hotel_balance_amount,
-                                Food_Balance_Amount=food_balance_amount,
-                                Advance_Reference_Name=bill_master_debit_name,
-                                Advance_Reference_Mobile_Number=bill_master_debit_Number,
-                                Advance_Instruction=bill_master_debit_instruction,
-                            )
+                            # Create the new advance record only if at least one of the amounts is positive
+                            if hotel_advance_amount > 0 or food_advance_amount > 0:
+                                new_advance = Bill_Master_ADD_Advance.objects.create(
+                                    Advance_Receipt_Number=formatted_advance_Receipt_Number,
+                                    Advance_Guest_Name=select_company.Company_Name if select_company else '',
+                                    Advance_Mobile_Number=bill_master_debit_Number,
+                                    Advance_Bill_Company=select_company,
+                                    Advance_Payment_Date=debit_bill_date,
+                                    Hotel_Advance_Amount=hotel_advance_amount,
+                                    Hotel_Advance_MOD=hotel_advance_mod,
+                                    Food_Advance_Amount=food_advance_amount,
+                                    Food_Advance_MOD=food_advance_mod,
+                                    Total=hotel_advance_amount + food_advance_amount,
+                                    Hotel_Balance_Amount=hotel_balance_amount,
+                                    Food_Balance_Amount=food_balance_amount,
+                                    Advance_Reference_Name=bill_master_debit_name,
+                                    Advance_Reference_Mobile_Number=bill_master_debit_Number,
+                                    Advance_Instruction=bill_master_debit_instruction,
+                                )
 
-                            queryset.Bill_Master_Formated_Advance_Receipt_Number=formatted_advance_Receipt_Number
+                                queryset.Bill_Master_Formated_Advance_Receipt_Number = formatted_advance_Receipt_Number
 
-                            logging.info(f"New advance record created: {new_advance}")
+                                logger.info(f"New advance record created: {new_advance}")
 
-                queryset.save()
+                    queryset.save()
                 return redirect("/Bill-Master-Debit-Bill-Profile/")
 
             except Exception as e:
-                logging.error(f"Error processing form: {str(e)}")
+                logger.error(f"Error processing form: {str(e)}")
                 messages.error(request, 'An error occurred while processing the form.')
                 return render(request, "Bill_Master_Debit_Bill_Add.html", context)
 
@@ -906,9 +960,9 @@ def Bill_Master_Debit_Bill_Add(request, id):
     except Bill_Master_ADD_Bill.DoesNotExist:
         messages.error(request, 'Bill master record not found.')
         return redirect("/Bill-Master-Debit-Bill-Profile/")
-    
+
     except Exception as e:
-        logging.error(f"An error occurred: {str(e)}")
+        logger.error(f"An error occurred: {str(e)}")
         return render(request, "error_page.html", {"error_message": "An unexpected error occurred."})
 
 
@@ -981,7 +1035,7 @@ def Bill_Master_Debit_Bill_Delete(request, id):
     except Bill_Master_ADD_Bill.DoesNotExist:
         messages.error(request, 'Bill master debit record not found.')
     except Exception as e:
-        print(e)  # Print any error that occurs for debugging purposes
+        logger.error(f'Error deleting debit bill {id}: {e}')
         messages.error(request, 'An error occurred while deleting the refund details.')
 
     return redirect('/Bill-Master-Debit-Bill-Profile/')
