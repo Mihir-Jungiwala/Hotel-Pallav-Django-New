@@ -1,0 +1,62 @@
+{% comment %}
+Shared field set for the four Hotel/Food Miscellaneous Expense Add+Update
+templates. Field names differ only by the hotel_/food_ prefix, so the
+parent passes `prefix` (e.g. "hotel_Cash_miscellaneous_expense") plus the
+three pre-filled values for Update (blank strings for Add), a `back_url`,
+and `accent` ("pallav" or "gold") to keep the Hotel/Food color coding.
+{% endcomment %}
+
+<form method="POST" enctype="multipart/form-data" class="space-y-5">
+  {% csrf_token %}
+  <div class="grid sm:grid-cols-2 gap-5">
+    <div>
+      <label for="date" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Date</label>
+      <input type="date" id="date" name="{{ prefix }}_date" readonly value="{{ current_date|date:'Y-m-d' }}"
+        class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+    </div>
+    <div>
+      <label for="time" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Time</label>
+      <input type="time" id="time" name="{{ prefix }}_time" readonly value="{{ current_time }}"
+        class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+    </div>
+  </div>
+
+  <div>
+    <label for="username" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Username</label>
+    <input type="text" id="username" name="{{ prefix }}_username" readonly value="{{ request.user.username }}"
+      class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+  </div>
+
+  <div>
+    <label for="expense_name" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Expense Name</label>
+    <input type="text" id="expense_name" name="{{ prefix }}_name" required value="{{ expense_name }}"
+      class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+  </div>
+
+  <div>
+    <label for="amount" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Amount</label>
+    <input type="text" id="amount" name="{{ prefix }}_amount" required value="{{ amount }}"
+      class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+  </div>
+
+  <div>
+    <label for="instruction" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Instruction</label>
+    <input type="text" id="instruction" name="{{ prefix }}_instruction" value="{{ instruction }}"
+      class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-3 pt-2">
+    {% if accent == "gold" %}
+    <button type="submit" class="flex-1 rounded-xl bg-gradient-to-r from-gold-600 to-gold-800 hover:from-gold-700 hover:to-gold-900 text-white font-bold py-3 shadow-lg shadow-gold-900/20 transition hover:-translate-y-0.5 active:scale-[0.98]">
+      Submit
+    </button>
+    {% else %}
+    <button type="submit" class="flex-1 rounded-xl bg-gradient-to-r from-pallav-600 to-pallav-800 hover:from-pallav-700 hover:to-pallav-900 text-white font-bold py-3 shadow-lg shadow-pallav-900/20 transition hover:-translate-y-0.5 active:scale-[0.98]">
+      Submit
+    </button>
+    {% endif %}
+    <a href="{{ back_url }}" class="flex-1 text-center rounded-xl bg-pallav-50 hover:bg-pallav-100 text-pallav-700 font-bold py-3 transition">
+      Cancel
+    </a>
+  </div>
+</form>

@@ -1,0 +1,68 @@
+{% comment %}
+Shared field set for Staff_Advance_Salaries.html (Add) and
+Staff_Advance_Salaries_Update.html. On Update the staff-name select is
+disabled (matches the view — the assigned staff member can't be changed
+after the fact) and `record` carries the existing values.
+{% endcomment %}
+
+<div class="grid sm:grid-cols-2 gap-5">
+  <div>
+    <label for="date" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Date</label>
+    <input type="date" id="date" name="staff_advance__date" readonly value="{{ current_date|date:'Y-m-d' }}"
+      class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+  </div>
+  <div>
+    <label for="staff_advance" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Time</label>
+    <input type="time" id="staff_advance" name="staff_advance__time" readonly value="{{ current_time }}"
+      class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+  </div>
+</div>
+
+<div>
+  <label for="staff_advance_username" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Username</label>
+  <input type="text" id="staff_advance_username" name="staff_advance_username" readonly value="{{ request.user.username }}"
+    class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+</div>
+
+{% if record %}
+<div>
+  <label class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Selected Month</label>
+  <input type="text" readonly value="{{ record.Staff_Advance_year_month }}"
+    class="w-full rounded-xl border border-pallav-200 bg-pallav-50/50 px-4 py-3 text-sm font-semibold text-pallav-900 outline-none">
+</div>
+{% endif %}
+
+<div>
+  <label for="staf_advance_year_month" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Year-Month</label>
+  <select id="staf_advance_year_month" name="staff_advance_year_month"
+    class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+    {% if record %}
+      <option value="{{ record.Staff_advance_year_month }}">{{ current_year }} - {{ current_month_name }}</option>
+    {% else %}
+      <option value="{{ current_year }}-{{ current_month }}">{{ current_year }} - {{ current_month_name }}</option>
+    {% endif %}
+  </select>
+</div>
+
+<div>
+  <label for="staff_advance_name" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Staff Name</label>
+  <select id="staff_advance_name" name="staff_advance_name" {% if record %}disabled{% endif %} required
+    class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition disabled:bg-pallav-50/50 disabled:text-pallav-500">
+    <option value="" disabled {% if not record %}selected{% endif %}>Select Staff Name</option>
+    {% for profile in user_profiles %}
+      <option value="{{ profile.id }}" {% if record and profile == record.Staff_Advance_name %}selected{% endif %}>{{ profile.User_Full_Name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div>
+  <label for="advance_amount" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Amount</label>
+  <input type="text" id="advance_amount" name="advance_amount" required value="{{ record.Staff_Advance_amount|default:'' }}"
+    class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+</div>
+
+<div>
+  <label for="staff_advance_instruction" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Instruction</label>
+  <input type="text" id="staff_advance_instruction" name="staff_advance_instruction" value="{{ record.Staff_Advance_instruction|default:'' }}"
+    class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+</div>
