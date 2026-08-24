@@ -262,3 +262,115 @@ throughout.
 
 ---
 
+## Company app — full pass
+
+### 🐛 Confirmed crash: updating a company by an invalid id → hard 500
+
+`Company_Profile__Update` did `queryset = Company_Profile.objects.get(id=id)`
+as the first line inside a `try`, then — outside the try/except entirely —
+`return render(request, "...", {'companyprofile': queryset})`. A
+nonexistent id raises `DoesNotExist`, caught by the generic `except
+Exception`, which logs a friendly message... and then execution falls
+through to that final `render()`, which references `queryset` — never
+assigned. Reproduced directly: `GET /Company--Profile-Update/999999/`
+raised `UnboundLocalError: cannot access local variable 'queryset'`,
+an unhandled 500. Fixed with `get_object_or_404`, which now correctly
+returns a real 404 instead.
+
+### 🐛 Confirmed crash: any GET request to the delete URL → hard 500
+
+`Company_Profile_User_Delete` only had a body inside `if request.method ==
+'POST':` with no `else`. A GET request (a stray link, a crawler, a
+browser link-prefetch) fell through the entire function with no `return`
+statement reached at all. Reproduced directly: `GET
+/Company--Profile-User-Delete/23/` raised `ValueError: The view ...
+didn't return an HttpResponse object. It returned None instead.` — also
+an unhandled 500. Fixed: GET now redirects back to the list with an
+"Invalid request" message instead of crashing.
+
+### 🐛 Assistant HR mobile number silently dropped on every new company
+
+The Add view read `request.POST.get('company_assitant_hr_mobile_number')`
+(missing an "s") — but both the original Add *and* Update templates have
+only ever submitted `company_assistant_hr_mobile_number` (correct
+spelling). Confirmed by diffing the original app's two templates: both
+already used the correct spelling; only the Add view's Python read the
+wrong key. Every company ever registered through "Add Company" has had a
+blank Assistant HR Mobile Number regardless of what was actually typed
+into that field — a pure silent data-loss bug, invisible unless someone
+went looking at the raw column. Fixed by extracting both Add and Update
+field-handling into one shared `COMPANY_FIELD_MAP`/`_extract_company_fields()`
+(see "Also: large de-duplication" below), which uses the one correct spelling.
+
+### 🐛 Clearing a percentage field on Update crashed the request
+
+The Add view defaults Discount/GST/TCS/TDS percentage to `'0'` when
+blank; the Update view instead defaulted them to `''`. Confirmed directly
+against a real row: assigning `''` to a `DecimalField` attribute and
+calling `.save()` raises `ValidationError` — not caught by the update
+view's `except IntegrityError` clause, only by the broader
+`except Exception`, which then re-rendered the form... but the field on
+the in-memory object was already `''`, so the same crash would recur on
+the next save attempt unless the user re-typed a number into that field.
+Fixed by unifying both views to the same `'0'`-when-blank default.
+
+### 🔒 GST-number uniqueness — check-then-create race fixed with a real DB constraint
+
+`Company_GST_Number` had no `unique=True` and no way to have one, since a
+plain unique constraint on a nullable-but-not-blank-safe field would wrongly
+reject a second company with a blank GST number (Django/most DBs treat
+`NULL` as "never equal," but every call site actually stores `''`, not
+`NULL`, when the field is left blank). The registration/update views
+enforced uniqueness only with a `.filter(...).exists()` check followed by
+`.create()`/`.save()` in separate statements — two concurrent submissions
+with the same GST number could both pass the check before either write
+landed. Added a conditional `UniqueConstraint` (`Company_GST_Number` unique
+only when non-null and non-empty) via migration
+`0005_company_profile_unique_company_gst_number_when_set`, and both views
+now catch the resulting `IntegrityError` with a friendly message instead
+of relying solely on the pre-check. `test_two_companies_can_both_have_blank_gst_number`
+confirms the constraint doesn't over-apply.
+
+### 🔒 Raw database error text no longer shown to users
+
+Both views caught `IntegrityError` and did `messages.error(request,
+str(e))` — showing a raw SQLite constraint-violation string (or, for the
+manually-`raise`d GST case, the literal Python exception text) directly on
+the page. Now shows one consistent, friendly message
+(`A company named "X" or with that GST number already exists.`) and logs
+the real exception server-side.
+
+### 🔒 Basic server-side validation added
+
+Company name is now required (previously: no check at all — an empty
+name could be submitted, and would only ever collide with a second empty
+name thanks to `Company_Name`'s existing `unique=True`). Email fields
+(company + every contact role) are validated with Django's own
+`validate_email`. Percentage fields are validated as numbers in [0, 100]
+before hitting the database, instead of only being caught if they happen
+to be non-numeric text (silently accepted otherwise, even at 9999%).
+
+### Also: large de-duplication
+
+Both the registration and update views had ~30 nearly-identical
+`request.POST.get('company_x', '')` lines each, and the registration view
+had two entire duplicate `Company_Profile.objects.create(...)` call
+blocks (one for "GST number provided," one for "not provided" — both
+blocks were otherwise identical, since the GST field is passed through in
+both anyway). Collapsed into a shared `COMPANY_FIELD_MAP` +
+`_extract_company_fields()` + `_validate_company_fields()`, used by both
+views. Also removed doubled/redundant imports (`IntegrityError` and
+`messages` were each imported twice in the original file, once above and
+once below a stray mid-file `@login_required`/import block).
+
+**Verification:** `manage.py check` clean; 16 tests in `Company/tests.py`
+covering both crash reproductions and their fixes, the typo-field fix,
+duplicate name/GST rejection (with a check that the friendly message
+replaces the raw SQL string), the blank-GST-doesn't-collide case, the
+decimal-crash fix, invalid-email and out-of-range-percentage rejection,
+and that updating a company without changing its own GST number doesn't
+reject itself as a false duplicate. Full cross-app smoke test still 200s
+throughout.
+
+---
+

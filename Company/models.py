@@ -44,6 +44,28 @@ class Company_Profile(models.Model):
     modified_at = models.DateTimeField(auto_now=True, editable=False)
 
     
+    class Meta:
+        constraints = [
+            # The view has always intended GST numbers to be unique
+            # ("if GST number is provided, enforce uniqueness") but only
+            # ever enforced it with a check-then-create pattern in
+            # Python — two concurrent registrations submitting the same
+            # GST number could both pass the .exists() check before
+            # either insert finished, landing two rows with the same
+            # number. A real constraint is the only way to make that
+            # actually impossible rather than just unlikely. Scoped to
+            # non-blank values only: Company_GST_Number has no
+            # blank=True/default, so an omitted GST number is stored as
+            # '' (not NULL) by every existing call site, and a plain
+            # unique=True would then only ever allow *one* company in
+            # the whole table to have a blank GST number.
+            models.UniqueConstraint(
+                fields=['Company_GST_Number'],
+                condition=~models.Q(Company_GST_Number='') & models.Q(Company_GST_Number__isnull=False),
+                name='unique_company_gst_number_when_set',
+            ),
+        ]
+
     def __str__(self):
         return self.Company_Name
 
