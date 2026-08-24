@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px); /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .content {
+            padding: 20px;
+            font-size: 18px;
+            color: black;
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1px;
+            text-align: center; /* Center align content */
+        }
+        
+        /* Style for the Add User button */
+        .add-user-btn {
+            background-color: #6c757d; /* Grey color */
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            text-decoration: none; /* Remove underline */
+        }
+
+        .add-user-btn:hover {
+            background-color: #6c757d; /* Grey color */
+            color: #fff; /* Change text color on hover */
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Hello, {{ request.user.username }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.username == 'SuperAdmin' %}
+                            <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% elif request.user.is_superuser %}
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% else %}
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handvoer-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>                
+               <!-- <li><a href="/Reports-Profile/">Reports</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+            
+            <div class="content">
+                {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+    
+               
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <!-- Personal Information -->
+                    
+                    <h2>Personal Information</h2>
+                    <div class="form-group">
+                        <label for="full_name" class="form-label">Full Name:</label>
+                        <input type="text" id="full_name" name="full_name" class="form-control" value=" {{user.User_Full_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="address" class="form-label">Address:</label>
+                        <input type="text" id="address" name="address" class="form-control" value=" {{user.User_Address}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="mobile_number" class="form-label">Mobile Number:</label>
+                        <input type="text" id="mobile_number" name="mobile_number" class="form-control" value=" {{user.User_Mobile_Number}}" >
+                    </div>
+                    <div class="form-group">
+                        <label for="date_of_birth" class="form-label">Date of Birth:</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" class="form-control" value="{{ user.User_Date_Of_Birth|date:'Y-m-d' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gender" class="form-label">Gender:</label>
+                        <select id="gender" name="gender" class="form-control" value=" {{user.User_Gender}}">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Work History -->
+                    <h2>Work History</h2>
+                    <div class="form-group">
+                        <label for="job_title" class="form-label">Job Title:</label>
+                        <input type="text" id="job_title" name="job_title" class="form-control" value=" {{user.User_Job_Title}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="department" class="form-label">Department:</label>
+                        <input type="text" id="department" name="department" class="form-control" value=" {{user.User_Department}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="email_id" class="form-label">Email:</label>
+                        <input type="email" id="email_id" name="email_id" class="form-control" value=" {{user.User_Email_ID}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="country_and_pin_code" class="form-label">Country</label>
+                        <input type="text" id="country_and_pin_code" name="country_and_pin_code" class="form-control" value=" {{user.User_Country_And_Pin_Code}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="nationality" class="form-label">Nationality</label>
+                        <input type="text" id="nationality" name="nationality" class="form-control" value=" {{user.User_Nationality}}">
+                    </div>
+
+                    <!-- Education and Qualifications -->
+                    <h2>Education and Qualifications</h2>
+                    <div class="form-group">
+                        <label for="qualification" class="form-label">Qualification:</label>
+                        <input type="text" id="qualification" name="qualification" class="form-control" value=" {{user.User_Qualification}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="institution" class="form-label">Institution:</label>
+                        <input type="text" id="institution" name="institution" class="form-control" value=" {{user.User_Qualification_Institution}}">
+                    </div>
+
+                    <!-- Skills and Competencies -->
+                    <h2>Skills</h2>
+                    <div class="form-group">
+                        <label for="skills" class="form-label">Skills:</label>
+                        <input type="text" id="institution" name="institution" class="form-control" value=" {{user.User_Skills}}">
+                    </div>
+
+                    <!-- Salary -->
+                    <h2>Salary</h2>
+                    <div class="form-group">
+                        <label for="salary" class="form-label">Salary:</label>
+                        <input type="number" id="salary" name="salary" class="form-control" value="{{user.User_Salary}}">
+                    </div>
+
+                    <!-- Images -->
+                    <h2>User</h2>
+                    <div class="image-section">
+                        <div class="form-group">
+                            <label for="image" class="form-label">Employee Photo</label>
+                            <input type="file" id="image" name="image" class="form-control-file" accept="image/*" value=" {{user.User_Image}}"> 
+                        </div>
+                        <div class="form-group">
+                            <label for="document_frontside_image" class="form-label">Document Front Side</label>
+                            <input type="file" id="document_frontside_image" name="document_frontside_image" class="form-control-file" accept="image/*" value=" {{user.User_Document_Frontside_Image}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="document_backside_image" class="form-label">Document Back Side</label>
+                            <input type="file" id="document_backside_image" name="document_backside_image" class="form-control-file" accept="image/*" value=" {{user.User_Document_Backside_Image}}">
+                        </div>
+                    </div>
+
+                    <!-- PDF Document -->
+                    <h2>PDF Document</h2>
+                    <div class="form-group">
+                        <label for="resume_pdf" class="form-label">Upload PDF Document</label>
+                        <input type="file" id="resume_pdf" name="resume_pdf" class="form-control-file" accept=".pdf" value=" {{user.User_Resume_PDF}}">
+                    </div>
+
+                    <input type="submit" value="Submit" class="btn btn-success">
+                    <a href="/Staff--Profile-User-Profile/" class="btn btn-secondary">Cancel</a>
+                </form>
+                
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div style="margin: 0 auto;">© 2024 Easy Hotel Solutions. All right reserved</div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

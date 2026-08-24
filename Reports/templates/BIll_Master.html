@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Report</title>
+    <style>
+        /* Reset body and html styles */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: #d3d3d3; /* Grey background color for the whole page */
+        }
+
+        /* Container for A4 size content */
+        #a4-page {
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            margin: auto; /* Center the container */
+            padding: 10px; /* Optional padding */
+            box-sizing: border-box;
+            overflow: hidden; /* Remove scroll bar */
+            background-color: white; /* White background color inside the page */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Align content at the top */
+            position: relative; /* For positioning the footer */
+        }
+
+        /* Header styling */
+        header {
+            margin-bottom: 5px; /* Reduced space below the header */
+        }
+
+        /* Footer styling */
+        footer {
+            position: absolute; /* Position footer absolutely within #a4-page */
+            bottom: 0; /* Place footer at the bottom of #a4-page */
+            width: 100%; /* Full width of #a4-page */
+            display: flex; /* Use flexbox layout */
+            justify-content: space-between; /* Space out left and right content */
+            padding: 10px 20px; /* Padding to keep text within the page bounds */
+            background-color: white; /* Match background color to page */
+            box-sizing: border-box;
+        }
+
+        /* Style the page number */
+        .page-number {
+            text-align: right;
+            white-space: nowrap; /* Prevent line wrapping */
+        }
+
+        /* Style for centered content */
+        #centered-content {
+            text-align: center; /* Center-align text */
+            margin-bottom: 5px; /* Reduced space below the centered content */
+        }
+
+        /* Horizontal line styling */
+        .horizontal-line {
+            border-top: 1px solid black;
+            width: 100%;
+            margin: 2px 0; /* Reduced space between the header line and content below */
+        }
+
+        /* Centering the Daily Report and Revenue headers */
+        .centered-section {
+            text-align: center; /* Center-align text */
+            margin-bottom: 2px; /* Reduced space below Daily Report and Revenue section */
+        }
+
+        /* Style for the Cash header */
+        .cash-section {
+            display: flex; /* Use flexbox to keep the elements in the same line */
+            justify-content: flex-start; /* Align text to the left */
+            align-items: center; /* Align elements vertically */
+            margin-bottom: 2px; /* Reduced space below the cash section */
+            text-align: left; /* Align the text to the left */
+            padding-left: 20px; /* Adjust the padding */
+            margin-right: 2px; /* Move inner by 2px */
+        }
+
+        /* Table styling */
+        table {
+            width: calc(100% - 40px); /* Full width of the page minus the padding */
+            border-collapse: collapse; /* Collapse borders */
+            margin-bottom: 2px; /* Reduced space below the table */
+            margin: 0 auto; /* Center the table */
+            font-size: 10px; /* Reduce font size */
+        }
+
+        th, td {
+            border: 1px solid black; /* Add border around cells */
+            padding: 5px; /* Less padding */
+            text-align: center; /* Center-align text */
+            white-space: nowrap; /* Prevent line wrapping */
+        }
+
+        th {
+            background-color: #f2f2f2; /* Light gray background for table headers */
+        }
+
+        /* Additional styles */
+        td.none-border {
+            border: none; /* Remove border for specified cells */
+            padding-right: 5px; /* Optional padding adjustment */
+            text-align: center; /* Center the text in the specified cells */
+        }
+
+        /* Responsive design for smaller screens */
+        @media (max-width: 768px) {
+            #a4-page {
+                width: 100%; /* Full width on smaller screens */
+                height: auto; /* Adjust height automatically */
+                padding: 10px; /* Reduce padding for smaller screens */
+            }
+
+            header, footer {
+                padding: 5px 10px; /* Reduce padding for smaller screens */
+            }
+        }
+
+        @media print {
+            /* Hide all elements except for the #a4-page div */
+            body > *:not(#a4-page) {
+                display: none; /* Hide everything except #a4-page */
+            }
+
+            #a4-page {
+                width: 297mm; /* A4 width for printing */
+                height: 210mm; /* A4 height for printing */
+                margin: 0; /* Remove margin when printing */
+            }
+
+            /* Specify A4 page size and no margins */
+            @page {
+                size: A4 landscape; /* Set page size to A4 landscape */
+                margin: 0; /* Optional: Set margins to 0 */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="a4-page" class="landscape">
+        <!-- Header section -->
+        <header>
+            <!-- Date and time on the right side -->
+            <div id="date-time" style="text-align: right; margin-bottom: 2px; padding-right: 20px;" >
+                <p style="font-size: 11px;">{{ current_day }}, {{ current_date }}  {{ current_time }}</p>
+            </div>
+
+            <!-- Centered content -->
+            <div id="centered-content" style="margin-bottom: 2px;">
+                <h1 style="font-size: 20px;">Hotel Pallav</h1>
+                <p style="font-size: 13px;">Opp. Saint Marry School, Near K.K.V. Hall, Kalawad Road, Rajkot - 360 001<br>
+                    Contact: +91 98 257 35404, +91 70 435 35404</p>
+            </div>
+
+            <!-- Add a horizontal line below the header -->
+            <hr class="horizontal-line">
+        </header>
+
+        <!-- Centered Daily Report and Revenue section -->
+        <div class="centered-section" style="margin-bottom: -50px;">
+            <h2 style="font-size: 14px;">Daily Report</h2>
+            <h2 style="font-size: 14px;">Revenue</h2>
+        </div>
+
+        <!-- Cash section with Cash header -->
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Cash</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Card</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Cheque</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Bank Transfer</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">UPI</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Complimentary</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if bill_maters %}
+        <div class="Cash-Report">
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Debit Bill</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Advance / Date / Amount</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Advance_Receipt_Number %}
+                                        {{ item.Bill_Master_Advance_Receipt_Number }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number and item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Date %}
+                                        {{ item.Bill_Master_Advance_Date }}
+                                    {% endif %}
+                                    {% if item.Bill_Master_Advance_Receipt_Number or item.Bill_Master_Advance_Date %}
+                                        / 
+                                    {% endif %}
+                                    {% if item.Bill_Master_Hotel_Advance_Amounts %}
+                                        Rs.{{ item.Bill_Master_Hotel_Advance_Amounts|floatformat:"0" }}
+                                    {% endif %}
+                                </td>
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        {% if bill_maters %}
+        <div class="Cash-Report">   
+            <div class="cash-section" style="margin-bottom: 0; padding-right: 10px; margin-right: 0px;">
+                <h4 class="cash-header" style="font-size: 12px;">Debit Bill Received</h4>
+            </div>
+
+            <!-- Table for Cash transactions -->
+            <table class="table" id="cash-table" style="padding: 0 20px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Bill Number</th>
+                        <th>Guest Name</th>
+                        <th>Mode Of Payment</th>   
+                                       
+                        <th>Plan</th>
+                        
+                        <th>Laundry</th>
+                        <th>Bill Amount</th>   
+                        <th>Paid Amount</th>                   
+                    </tr>
+                </thead>
+                <tbody id="cash-body">
+                    {% for item in bill_maters %}
+                        {% if item.Bill_Master_Hotel_Mode_Of_Payment == "Cash" %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.Bill_Master_Bill_Date }}</td>
+                                <td>{{ item.Bill_Master_Bill_Number }}</td>
+                                <td>{{ item.Bill_Master_Guest_Name }}</td>
+                                <td>{{ item.Bill_Master_Debit_Hotel_Mode_Of_Payment }}   </td>                                
+                               
+                                
+                                
+                                <td>{{ item.Bill_Master_Hotel_Plan }} {% if item.Bill_Master_Hotel_Plan_Amount %} ( {% if item.Bill_Master_Hotel_Plan_Amount < 0 %}-{% endif %}{{ item.Bill_Master_Hotel_Plan_Amount|floatformat:"0" }} ){% endif %}</td>
+
+                                
+                                <td>{% if item.Bill_Master_Hotel_Laundry_Amount %} + {{ item.Bill_Master_Hotel_Laundry_Amount |floatformat:"0"}} {% endif %}</td>
+                                <td>{{ item.Bill_Master_Hotel_Amount|add:item.Bill_Master_Hotel_GST|add:item.Bill_Master_Hotel_Laundry_Amount|floatformat:"0" }}</td>
+                                <td>
+                                    {% if item.Bill_Master_Total_Hotel_Amount >= 0 %}
+                                        {{ item.Bill_Master_Total_Hotel_Amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% cycle '' '' '' '' '' '' '' '' '' '' '' '' '<div class="page-break"></div>' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        <!-- Footer -->
+        <footer>
+            <div style="text-align: left;">
+                <p style="font-size: 11px;">{{ request.user.username }}</p>
+            </div>
+            <div style="text-align: right;" class="page-number">
+                <p id="page-number"></p>
+            </div>
+        </footer>
+        
+    </div>
+</body>
+</html>

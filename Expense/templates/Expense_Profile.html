@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px); /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .content {
+            padding: 20px;
+            font-size: 18px;
+            color: black;
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1px;
+            text-align: center; /* Center align content */
+        }
+        
+        /* Style for the Add User button */
+        .add-user-btn {
+            background-color: #6c757d; /* Grey color */
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            text-decoration: none; /* Remove underline */
+        }
+
+        .add-user-btn:hover {
+            background-color: #6c757d; /* Grey color */
+            color: #fff; /* Change text color on hover */
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Hello, {{ request.user }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.username == 'SuperAdmin' %}
+                            <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% elif request.user.is_superuser %}
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% else %}
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handover-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>                
+                <!-- <li><a href="/Reports-Profile/">Reports</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+            <div class="content">
+                <p>
+                    <a href="/Hotel-Expense-Cash-Withdraw/" class="add-user-btn">Hotel Cash Withdraw</a>
+                    <a href="/Hotel-Cash-Miscellaneous-Expense/" class="add-user-btn">Hotel Cash Miscellaneous Expense</a>
+                    <a href="/Food-Expense-Cash-Withdraw/" class="add-user-btn">Food Cash Withdraw</a>  
+                    <a href="/Food-Cash-Miscellaneous-Expense/" class="add-user-btn">Food Cash Miscellaneous Expense</a>
+                    <a href="/Staff-Advance-Salaries/" class="add-user-btn">Staff Advance</a>
+                </p>
+                <table class="table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Serial</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Name</th>
+                            <th>Withdrawer / Expense / Advance</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Instruction</th>
+                           
+
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if staffadvance %}
+                            {% for item in staffadvance %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ item.Staff_Advance_date }}</td>
+                                    <td>{{ item.Staff_Advance_time }}</td>
+                                    <td>{{ item.Staff_Advance_Full_Name }}</td>
+                                    <td>{{ item.Staff_Advance_name }}</td>
+                                    <td>Advance</td> 
+                                    <td>{{ item.Staff_Advance_amount }}</td>
+                                    <td>{{ item.Staff_Advance_instruction }}</td>
+                                    <td>
+                                        {% if request.user.is_authenticated %}
+                                        {% if request.user.is_superuser  %}
+                                       
+
+                                        <a href="/Staff-Advance-Salaries-Update/{{ item.id }}/" class="btn btn-primary">Update</a>
+                                        <a href="/Staff-Advance-Salaries-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+
+                                        <form action="/Staff-Advance-Salaries-Delete/{{ item.id }}/" method="post" style="display: inline-block;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
+                                        </form>
+                                        {% elif request.user.is_staff %}
+                                        
+                                        <a href="/Staff-Advance-Salaries-Update/{{ item.id }}/" class="btn btn-primary">Update</a>
+                                        <a href="/Staff-Advance-Salaries-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        {% else %}
+                                        <a href="/Staff-Advance-Salaries-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        {% endif %}
+                                    {% endif %}
+
+                                      
+                                        
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if hotel_withdrawals %}
+                            {% for item in hotel_withdrawals %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ item.Withdrawal_Hotel_Date }}</td>
+                                    <td>{{ item.Withdrawal_Hotel_Time }}</td>
+                                    <td>{{ item.Withdrawal_Hotel_Full_Name }}</td>
+                                    <td>{{ item.Withdrawal_Hotel_Withdrawer }}</td>
+                                    <td>Hotel Withdraw</td> 
+                                    <td>{{ item.Withdrawal_Hotel_Amount }}</td>
+                                    <td>{{ item.Withdrawal_Hotel_Instruction }}</td>
+                                    <td>
+
+                                        
+                                        {% if request.user.is_authenticated %}
+                                        {% if request.user.is_superuser  %}
+                                        
+                                        <a href="/Hotel-Expense-Cash-Withdraw-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+
+                                        <form action="/Hotel-Expense-Cash-Delete/{{ item.id }}/" method="post" style="display: inline-block;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
+                                        </form>
+                                        {% else %}
+                                        <a href="/Hotel-Expense-Cash-Withdraw-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        {% endif %}
+                                    {% endif %}
+
+                                      
+                                        
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if food_withdrawals %}
+                            {% for item in food_withdrawals %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ item.Withdrawal_Food_Date }}</td>
+                                    <td>{{ item.Withdrawal_Food_Time }}</td>
+                                    <td>{{ item.Withdrawal_Food_Full_Name }}</td>
+                                    <td>{{ item.Withdrawal_Food_Withdrawer }}</td>
+                                    <td>Food Withdraw</td> 
+                                    <td>{{ item.Withdrawal_Food_Amount }}</td>
+                                    <td>{{ item.Withdrawal_Food_Instruction }}</td>
+                                    <td>
+
+                                        {% if request.user.is_authenticated %}
+                                        {% if request.user.is_superuser  %}
+                                        
+                                        <a href="/Food-Expense-Cash-Withdraw-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+
+                                        <form action="/Food-Expense-Cash-Delete/{{ item.id }}/" method="post" style="display: inline-block;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
+                                        </form>
+                                        
+                                        {% else %}
+                                        <a href="/Food-Expense-Cash-Withdraw-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+                                        {% endif %}
+                                    {% endif %}
+
+                                        
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if hotel_miscellaneous_expense_profile %}
+                            {% for item in hotel_miscellaneous_expense_profile %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Hotel_Date }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Hotel_Time }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Hotel_Full_Name }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Hotel_Expense_Name }}</td>
+                                    <td>Hotel Expense</td> 
+                                    <td>{{ item.Miscellaneous_Expenses_Hotel_Amount }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Hotel_Instruction }}</td>
+                                    <td>
+                                        {% if request.user.is_authenticated %}
+                                        {% if request.user.is_superuser  %}
+                                        <a href="/Hotel-Cash-Miscellaneous-Expense-Update/{{ item.id }}/" class="btn btn-primary">Update</a>
+                                        <a href="/Hotel-Cash-Miscellaneous-Expense-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+
+                                        <form action="/Hotel-Cash-Miscellaneous-Expense-Delete/{{ item.id }}/" method="post" style="display: inline-block;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
+                                        </form>
+                                        {% elif request.user.is_staff %}
+                                        <a href="/Hotel-Cash-Miscellaneous-Expense-Update/{{ item.id }}/" class="btn btn-primary">Update</a>
+                                        <a href="/Hotel-Cash-Miscellaneous-Expense-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+                                        {% else %}
+                                        <a href="/Hotel-Cash-Miscellaneous-Expense-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                        
+                                           <!--  <a href="#" class="btn btn-success">View</a>-->
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if food_miscellaneous_expense_profile %}
+                            {% for item in food_miscellaneous_expense_profile %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Food_Date }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Food_Time }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Food_Full_Name }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Food_Expense_Name }}</td>
+                                    <td>Food Expense</td> 
+                                    <td>{{ item.Miscellaneous_Expenses_Food_Amount }}</td>
+                                    <td>{{ item.Miscellaneous_Expenses_Food_Instruction }}</td>
+                                    <td>
+                                        {% if request.user.is_authenticated %}
+                                        {% if request.user.is_superuser  %}
+                                        
+                                        <a href="/Food-Cash-Miscellaneous-Expense-Update/{{ item.id }}/" class="btn btn-primary">Update</a>
+                                        <a href="/Food-Cash-Miscellaneous-Expense-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+                                        <form action="/Food-Cash-Miscellaneous-Expense-Delete/{{ item.id }}/" method="post" style="display: inline-block;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
+                                        </form>
+
+                                        {% elif request.user.is_staff %}
+                                        <a href="/Food-Cash-Miscellaneous-Expense-Update/{{ item.id }}/" class="btn btn-primary">Update</a>
+                                        <a href="/Food-Cash-Miscellaneous-Expense-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+                                        {% else %}
+                                        <a href="/Food-Cash-Miscellaneous-Expense-View/{{ item.id }}" class="btn btn-primary" target="_blank">View</a>
+                                        
+                                        {% endif %}
+                                    {% endif %}
+
+                                     
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div style="margin: 0 auto;">© 2024 Easy Hotel Solutions. All right reserved</div>
+    </footer>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

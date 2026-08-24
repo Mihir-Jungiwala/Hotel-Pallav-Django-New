@@ -1,0 +1,65 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{% endblock %} — Hotel Pallav</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&family=Tiro+Devanagari+Hindi&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { display: ['Playfair Display', 'ui-serif', 'serif'], sans: ['Inter', 'ui-sans-serif', 'sans-serif'] },
+        colors: {
+          pallav: { 50:'#F7F4FF',100:'#EFE9FE',200:'#DFD3FD',300:'#C6B0FB',400:'#A886F7',500:'#8B5CF6',600:'#7C3AED',700:'#6D28D9',800:'#5B21B6',900:'#4A1A8F' },
+          gold: { 50:'#FDF8EC',100:'#FBF0D3',200:'#F6E3A8',300:'#F6D67C',400:'#F0C465',500:'#C9A227',600:'#B38B1E',700:'#8F6D17',800:'#6B5210' },
+          cream: '#FBF9FF'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  *{ -webkit-tap-highlight-color:transparent; }
+  @keyframes riseIn{ from{ opacity:0; transform:translateY(28px); } to{ opacity:1; transform:none; } }
+  .rise-in{ animation:riseIn .7s cubic-bezier(.22,.9,.28,1) backwards; }
+  @keyframes drift{ 0%,100%{ transform:translate(0,0) scale(1); } 50%{ transform:translate(22px,-18px) scale(1.06); } }
+  .drift{ animation:drift 9s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce){ .rise-in,.drift{ animation:none; } }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gradient-to-br from-pallav-900 via-pallav-800 to-pallav-600 antialiased relative overflow-hidden font-sans">
+  <div class="pointer-events-none absolute -top-40 -left-32 w-[520px] h-[520px] rounded-full bg-pallav-400/30 blur-[90px] drift"></div>
+  <div class="pointer-events-none absolute -bottom-40 -right-24 w-[460px] h-[460px] rounded-full bg-gold-500/20 blur-[90px] drift" style="animation-delay:-4s"></div>
+
+  <div class="relative min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md rise-in">
+      <div class="flex flex-col items-center mb-8">
+        <span class="w-14 h-14 rounded-2xl overflow-hidden shadow-xl mb-3">{% include "partials/brand_mark.html" with size=56 %}</span>
+        <div class="text-white font-display font-bold text-xl">Hotel Pallav</div>
+        <div class="text-pallav-300 text-[11px] font-bold tracking-[.22em] uppercase mt-1">Accounts Panel</div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-2xl p-8 sm:p-10">
+        {% if messages %}
+          {% for message in messages %}
+          <div class="mb-5 rounded-xl {% if message.tags == 'error' %}bg-rose-50 text-rose-700 ring-1 ring-rose-200{% elif message.tags == 'warning' %}bg-amber-50 text-amber-700 ring-1 ring-amber-200{% else %}bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200{% endif %} px-4 py-3 text-sm font-semibold">
+            {{ message }}
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+
+      <p class="text-center text-pallav-300 text-xs font-semibold mt-8">&copy; {% now "Y" %} Hotel Pallav. All rights reserved.</p>
+    </div>
+  </div>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

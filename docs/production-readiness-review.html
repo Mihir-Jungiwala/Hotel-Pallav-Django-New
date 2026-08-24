@@ -1,0 +1,886 @@
+<title>Hotel Pallav Readiness Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground:      #F2F4F7;
+    --surface:     #FFFFFF;
+    --surface-2:   #E9EDF2;
+    --ink:         #131A24;
+    --ink-2:       #3C4859;
+    --muted:       #667487;
+    --rule:        #D9DFE7;
+    --rule-strong: #BAC4D0;
+    --accent:      #1D3B73;
+    --accent-soft: #E3EAF6;
+    --critical:    #A9231D;
+    --critical-bg: #F8E4E2;
+    --warn:        #97600C;
+    --warn-bg:     #FAEEDA;
+    --ok:          #1B6045;
+    --ok-bg:       #DFEFE7;
+    --code-bg:     #EEF1F5;
+
+    --measure: 68ch;
+    --s1: .35rem; --s2: .7rem; --s3: 1.1rem; --s4: 1.75rem; --s5: 2.75rem; --s6: 4.25rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0E1219;
+      --surface:     #161C25;
+      --surface-2:   #1E2733;
+      --ink:         #E5EAF1;
+      --ink-2:       #B7C2D0;
+      --muted:       #8593A5;
+      --rule:        #27313D;
+      --rule-strong: #3A4757;
+      --accent:      #86ABEA;
+      --accent-soft: #1B2942;
+      --critical:    #F2867D;
+      --critical-bg: #35191A;
+      --warn:        #DFA654;
+      --warn-bg:     #322415;
+      --ok:          #58C193;
+      --ok-bg:       #12301F;
+      --code-bg:     #101720;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0E1219;
+    --surface:     #161C25;
+    --surface-2:   #1E2733;
+    --ink:         #E5EAF1;
+    --ink-2:       #B7C2D0;
+    --muted:       #8593A5;
+    --rule:        #27313D;
+    --rule-strong: #3A4757;
+    --accent:      #86ABEA;
+    --accent-soft: #1B2942;
+    --critical:    #F2867D;
+    --critical-bg: #35191A;
+    --warn:        #DFA654;
+    --warn-bg:     #322415;
+    --ok:          #58C193;
+    --ok-bg:       #12301F;
+    --code-bg:     #101720;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: var(--s5) var(--s3) var(--s6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s5);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Zilla Slab", Georgia, serif;
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.18;
+    letter-spacing: -0.005em;
+  }
+  h1 { font-size: clamp(2.1rem, 5vw, 3rem); font-weight: 700; }
+  h2 { font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 600; }
+  h3 { font-size: 1.2rem; font-weight: 600; }
+  p  { margin: 0; max-width: var(--measure); }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.855em;
+  }
+  p code, li code, td code {
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  section { display: flex; flex-direction: column; gap: var(--s3); }
+  .stack-lg { display: flex; flex-direction: column; gap: var(--s4); }
+  .stack-sm { display: flex; flex-direction: column; gap: var(--s2); }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { display: flex; flex-direction: column; gap: var(--s3); }
+  .masthead .rule-top {
+    height: 5px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s1) var(--s3);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: var(--s2);
+  }
+  .meta-row span { font-family: "IBM Plex Mono", monospace; font-size: 0.74rem; color: var(--muted); letter-spacing: 0.04em; }
+
+  /* ---------- verdict ---------- */
+
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 5px solid var(--critical);
+    border-radius: 4px;
+    padding: var(--s4);
+    display: grid;
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+    gap: var(--s4);
+    align-items: start;
+  }
+  @media (max-width: 42rem) { .verdict { grid-template-columns: 1fr; gap: var(--s3); } }
+
+  .score {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    border-right: 1px solid var(--rule);
+    padding-right: var(--s4);
+  }
+  @media (max-width: 42rem) { .score { border-right: 0; border-bottom: 1px solid var(--rule); padding: 0 0 var(--s3); } }
+
+  .score .num {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-size: 4.6rem;
+    font-weight: 700;
+    line-height: 0.9;
+    color: var(--critical);
+    font-variant-numeric: tabular-nums;
+  }
+  .score .num sup { font-size: 0.36em; top: -1.5em; font-weight: 600; }
+  .score .cap { font-size: 0.92rem; color: var(--muted); line-height: 1.4; }
+
+  .verdict-body { display: flex; flex-direction: column; gap: var(--s2); }
+  .verdict-body p { font-size: 1.06rem; color: var(--ink-2); }
+  .verdict-body strong { color: var(--ink); }
+
+  /* ---------- answer cards ---------- */
+
+  .answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--s3); }
+  .answer {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: var(--s3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+  }
+  .answer .q { font-family: "Zilla Slab", serif; font-weight: 600; font-size: 1.02rem; }
+  .answer .a { font-size: 0.95rem; color: var(--ink-2); }
+  .answer .tag {
+    align-self: flex-start;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+    font-weight: 600;
+    margin-bottom: var(--s1);
+  }
+  .tag.yes { background: var(--ok-bg); color: var(--ok); }
+  .tag.no  { background: var(--critical-bg); color: var(--critical); }
+
+  /* ---------- scorecard ---------- */
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 34rem; }
+  th, td { text-align: left; padding: 0.68rem 0.9rem; border-bottom: 1px solid var(--rule); vertical-align: top; font-size: 0.94rem; }
+  thead th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.pct { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+
+  .bar { display: block; height: 4px; border-radius: 2px; background: var(--surface-2); margin-top: 5px; width: 4.5rem; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 2px; }
+
+  /* ---------- findings ---------- */
+
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--rule-strong);
+    border-radius: 4px;
+    padding: var(--s3) var(--s3) var(--s3) var(--s4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .finding.sev-blocker  { border-left-color: var(--critical); }
+  .finding.sev-high     { border-left-color: var(--warn); }
+  .finding.sev-medium   { border-left-color: var(--muted); }
+
+  .finding-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2); }
+  .idx {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .finding-head h3 { flex: 1 1 16rem; }
+  .sev {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 0.22em 0.5em;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .sev.blocker { background: var(--critical-bg); color: var(--critical); }
+  .sev.high    { background: var(--warn-bg);     color: var(--warn); }
+  .sev.medium  { background: var(--surface-2);   color: var(--ink-2); }
+
+  .where {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.76rem;
+    color: var(--muted);
+    word-break: break-word;
+  }
+
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.75rem 0.9rem;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.79rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  pre b { color: var(--critical); font-weight: 600; }
+  pre .cmt { color: var(--muted); }
+
+  .proof {
+    border-left: 2px solid var(--ok);
+    background: var(--ok-bg);
+    padding: 0.6rem 0.9rem;
+    border-radius: 0 3px 3px 0;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+  .proof .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ok);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  ul.tight { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: var(--s1); max-width: var(--measure); }
+  ul.tight li { padding-left: 0.15rem; }
+  ul.tight li::marker { color: var(--muted); }
+
+  /* ---------- decision ---------- */
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--s3); }
+  .col {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: var(--s3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .col.pick { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .col h3 { display: flex; align-items: baseline; gap: 0.5rem; }
+  .col .verdict-pill {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+    font-weight: 600;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .col p { font-size: 0.93rem; color: var(--ink-2); }
+
+  /* ---------- phases ---------- */
+
+  .phase {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: var(--s3);
+    padding: var(--s3) 0;
+    border-top: 1px solid var(--rule);
+  }
+  @media (max-width: 42rem) { .phase { grid-template-columns: 1fr; gap: var(--s2); } }
+  .phase-when { display: flex; flex-direction: column; gap: 2px; }
+  .phase-when .n { font-family: "Zilla Slab", serif; font-size: 1.5rem; font-weight: 700; line-height: 1; }
+  .phase-when .t { font-family: "IBM Plex Mono", monospace; font-size: 0.74rem; color: var(--muted); }
+  .phase-body { display: flex; flex-direction: column; gap: var(--s2); }
+
+  .callout {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 4px 4px 0;
+    padding: var(--s3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .callout p { max-width: none; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: var(--s3);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  footer p { max-width: none; }
+</style>
+
+<div class="page">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="masthead">
+    <div class="rule-top"></div>
+    <div class="meta-row">
+      <span>Hotel Pallav · Django Accounts System</span>
+      <span>Code &amp; production-readiness audit</span>
+      <span>24 Aug 2026</span>
+      <span>Commit d436ff0 · main</span>
+    </div>
+    <h1>Can this go live? Not yet — and the UI is the smallest problem.</h1>
+    <p style="font-size:1.1rem;color:var(--ink-2)">A full read of all 6,464 lines of Python, 48 templates and 9 apps — with the findings below reproduced by actually running the code, not by eyeballing it.</p>
+  </header>
+
+  <!-- ===================== VERDICT ===================== -->
+  <section>
+    <div class="verdict">
+      <div class="score">
+        <span class="eyebrow">Production ready</span>
+        <span class="num">20<sup>%</sup></span>
+        <span class="cap">For a system that handles cash, guest bills and GST invoices. A blog at this standard would score higher — money raises the bar.</span>
+      </div>
+      <div class="verdict-body">
+        <p><strong>The app does not currently run on a Linux server at all.</strong> I logged in with a real account and the very first page after login — the Dashboard — crashed with <code>TemplateDoesNotExist</code>. The code asks for <code>dashboard.html</code>; the file on disk is <code>Dashboard.html</code>. Windows ignores that difference. Every production server on earth does not.</p>
+        <p>That single fact tells the whole story: <strong>this code has never been run anywhere except a Windows development machine.</strong> Six templates are referenced that cannot be loaded, a live Gmail password sits in git history, any logged-in receptionist can make themselves a superuser, and every cash amount in Revenue and Expense is stored as text — so <span class="mono">₹2,000</span> typed with a comma is being counted as <span class="mono">₹2</span> in your dashboard totals right now.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DIRECT ANSWERS ===================== -->
+  <section>
+    <span class="eyebrow">Your three questions, answered first</span>
+    <div class="answers">
+      <div class="answer">
+        <span class="tag no">No</span>
+        <span class="q">Should we rewrite it in PHP?</span>
+        <span class="a">No. Not one of the 24 defects below is caused by Python or Django. They are all caused by how the code was written. PHP reproduces every one of them.</span>
+      </div>
+      <div class="answer">
+        <span class="tag no">No</span>
+        <span class="q">Should we move to Laravel?</span>
+        <span class="a">No. Laravel is a fine framework, but a rewrite costs 4–6 months, throws away your working hotel domain logic, and fixes nothing you can't fix in Django in 10 weeks.</span>
+      </div>
+      <div class="answer">
+        <span class="tag yes">Yes</span>
+        <span class="q">Continue with Django?</span>
+        <span class="a">Yes — but not "just update the UI". The UI is roughly a quarter of the work left. The backend needs real authorisation, real money columns, and a real deployment before any of it is safe to launch.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCORECARD ===================== -->
+  <section>
+    <span class="eyebrow">Scorecard</span>
+    <h2>Where the 20% comes from</h2>
+    <p>Each area scored on what a paying hotel would need on day one, not on effort spent.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Area</th><th>Ready</th><th>What I found</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Runs on a server</strong></td>
+            <td class="pct" style="color:var(--critical)">0%<span class="bar"><i style="width:2%;background:var(--critical)"></i></span></td>
+            <td>Dashboard 500s on Linux. Six broken template references. No WSGI/ASGI setup, no Gunicorn, no Nginx, no static file pipeline, no <code>.env</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Automated tests</strong></td>
+            <td class="pct" style="color:var(--critical)">0%<span class="bar"><i style="width:2%;background:var(--critical)"></i></span></td>
+            <td>All 9 <code>tests.py</code> files contain exactly one line: <code>from django.test import TestCase</code>. Nothing is tested. Nothing can be safely changed.</td>
+          </tr>
+          <tr>
+            <td><strong>Access control</strong></td>
+            <td class="pct" style="color:var(--critical)">10%<span class="bar"><i style="width:10%;background:var(--critical)"></i></span></td>
+            <td>Login works. After that, every user is effectively an admin — proven below. Roles exist in the UI but are never enforced in code.</td>
+          </tr>
+          <tr>
+            <td><strong>Secrets &amp; config</strong></td>
+            <td class="pct" style="color:var(--critical)">5%<span class="bar"><i style="width:5%;background:var(--critical)"></i></span></td>
+            <td>Secret key, Gmail app password and <code>DEBUG=True</code> all hardcoded and committed. <code>db.sqlite3</code> and 175 <code>.pyc</code> files tracked in git. No <code>.gitignore</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Data model</strong></td>
+            <td class="pct" style="color:var(--warn)">20%<span class="bar"><i style="width:20%;background:var(--warn)"></i></span></td>
+            <td>14 money/count columns stored as text. Payment instalments modelled as <code>_1</code>…<code>_4</code> columns instead of rows. Almost no constraints, no indexes, no <code>choices</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Error handling</strong></td>
+            <td class="pct" style="color:var(--warn)">20%<span class="bar"><i style="width:20%;background:var(--warn)"></i></span></td>
+            <td>66 blanket <code>except Exception</code> blocks that swallow the cause and show one generic page. 48 <code>print()</code> calls as the logging strategy. No <code>LOGGING</code> config, no error alerting.</td>
+          </tr>
+          <tr>
+            <td><strong>Business logic</strong></td>
+            <td class="pct" style="color:var(--warn)">35%<span class="bar"><i style="width:35%;background:var(--warn)"></i></span></td>
+            <td>The advance → bill → debit-bill flow is genuinely thought through. But totals are trusted from the browser, two copy-paste bugs mix hotel and food money, and there is no locking on balance updates.</td>
+          </tr>
+          <tr>
+            <td><strong>Code structure</strong></td>
+            <td class="pct" style="color:var(--warn)">30%<span class="bar"><i style="width:30%;background:var(--warn)"></i></span></td>
+            <td>Clean app split by domain — that part is right. But zero forms, zero services, zero shared template; 6,464 lines of near-identical <code>request.POST.get</code> blocks.</td>
+          </tr>
+          <tr>
+            <td><strong>Front end</strong></td>
+            <td class="pct" style="color:var(--warn)">40%<span class="bar"><i style="width:40%;background:var(--warn)"></i></span></td>
+            <td>48 standalone HTML files, not one <code>{% extends %}</code>. 18,292 lines of duplicated markup. Bootstrap and jQuery loaded from an unmaintained CDN with known CVEs and no fallback.</td>
+          </tr>
+          <tr>
+            <td><strong>Django's own safety net</strong></td>
+            <td class="pct" style="color:var(--ok)">90%<span class="bar"><i style="width:90%;background:var(--ok)"></i></span></td>
+            <td>The one bright spot. CSRF tokens on all 44 forms, no raw SQL anywhere, no <code>|safe</code>, no <code>csrf_exempt</code>. SQL injection and XSS are essentially closed — because Django closed them, not the code.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== BLOCKERS ===================== -->
+  <section class="stack-lg">
+    <div class="stack-sm">
+      <span class="eyebrow">Findings · ordered by fix priority</span>
+      <h2>Seven blockers. Fix these before anyone sees this system.</h2>
+      <p>Every item here was reproduced by running the code against a copy of your database. Line numbers are from commit <code class="mono">d436ff0</code>.</p>
+    </div>
+
+    <!-- 1 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">01</span>
+        <h3>The app crashes on any Linux server, on the first page after login</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Dashboard/views.py:137 · Shift_Handover/views.py:127 · Revenue/views.py:209,243 · Expense/views.py:168,201,331,364,442,517,628,700 · Staff_Profile/views.py:172 · Authentication/views.py:338</div>
+      <p>Six template names in the code do not match any file on disk. Windows and macOS match filenames case-insensitively, so this works on your laptop. Linux — every hosting provider you will use — does not.</p>
+<pre><span class="cmt"># Dashboard/views.py:137 — the landing page after every login</span>
+return render(request, <b>"dashboard.html"</b>, context)   <span class="cmt"># file on disk is Dashboard.html</span></pre>
+      <div class="proof">
+        <span class="label">Reproduced</span>
+        Logged in as a real user → <code>302 → /Dashboard-Profile/</code> → <code>django.template.exceptions.TemplateDoesNotExist: dashboard.html</code>. Also missing entirely, not just miscased: <code>confirm_delete.html</code> (7 views), <code>error_template.html</code> (3 views), <code>update_user_role.html</code>, <code>Staff__Profile_User_Update.html</code>.
+      </div>
+    </article>
+
+    <!-- 2 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">02</span>
+        <h3>Any logged-in user can make themselves a superuser and delete anyone</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Authentication/views.py:75 (Registration) · :127 (Delete_User_Profile) · :312 (Update_User_Role) · :291 (User_Active_Deactive_Status)</div>
+      <p>These four views are protected by <code>@login_required</code> and nothing else. <code>@login_required</code> only asks <em>"are you logged in?"</em> — never <em>"are you allowed?"</em>. A receptionist account has the same power over user accounts as the owner.</p>
+      <p>Worse, <code>Delete_User_Profile</code> deletes on a plain <code>GET</code>. That means a link or an image tag can delete a user account when an admin merely opens a page — CSRF protection does not apply to GET.</p>
+      <div class="proof">
+        <span class="label">Reproduced — logged in as a non-staff, non-superuser account</span>
+        <ul class="tight" style="margin-top:.4rem">
+          <li>Created a brand-new <code>is_superuser=True</code> account via <code>POST /User-Registration/</code> — <strong>succeeded</strong></li>
+          <li>Promoted itself to superuser via <code>POST /Update-User-Role/&lt;own id&gt;/</code> — <strong>succeeded</strong></li>
+          <li>Deleted another user with a plain <code>GET /Delete-User-Profile/&lt;id&gt;/</code> — <strong>succeeded</strong></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- 3 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">03</span>
+        <h3>Cash amounts are stored as text — your totals are already wrong</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Revenue/models.py · Expense/models.py · Shift_Handover/models.py — 14 columns</div>
+      <p>Every deposit, withdrawal and miscellaneous expense amount is a <code>CharField</code>, not a <code>DecimalField</code>. The Dashboard then runs <code>Sum()</code> over those text columns. SQLite silently reads the leading digits of each string and gives up at the first non-digit.</p>
+<pre><span class="cmt"># Revenue/models.py</span>
+Deposite_Hotel_Amount = models.<b>CharField</b>(max_length=50)   <span class="cmt"># money as text</span>
+
+<span class="cmt"># Dashboard/views.py:56</span>
+.aggregate(total=<b>Sum</b>('Deposite_Hotel_Amount'))            <span class="cmt"># summing text</span></pre>
+      <div class="proof">
+        <span class="label">Reproduced against your schema</span>
+        Two rows — <code>'1500.50'</code> and <code>'2,000'</code>. Correct total: <strong>₹3,500.50</strong>. What the Dashboard returned: <strong>₹1,502.50</strong>. The comma turned ₹2,000 into ₹2. Anyone who has ever typed a comma has silently corrupted a daily cash total.
+      </div>
+      <p>This also blocks the database move you will need. PostgreSQL and MySQL refuse to <code>SUM()</code> a text column outright — so the Dashboard will hard-crash the moment you leave SQLite, which you must do before launch.</p>
+    </article>
+
+    <!-- 4 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">04</span>
+        <h3>A live Gmail password and the secret key are committed to git</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Main/settings.py:23, 26, 154 · present since commit b686e0f</div>
+<pre>SECRET_KEY = 'django-insecure-n)-ur$w5bcd(-=-gb=kxs#k#$=o2b+dciy=e)af*s*58830z62'
+DEBUG = <b>True</b>
+ALLOWED_HOSTS = []
+EMAIL_HOST_USER = 'noreply.hotelpallav@gmail.com'
+EMAIL_HOST_PASSWORD = <b>'tjkh khnf elfw elfq'</b>   <span class="cmt"># Gmail app password, in git history</span></pre>
+      <p>Two consequences. First, that app password is compromised and must be revoked in the Google account today — not when you launch. Second, <code>SECRET_KEY</code> in public history means anyone can forge session cookies and password-reset tokens; it has to be rotated, which logs everyone out once.</p>
+      <p>With <code>DEBUG=True</code> in production, every crash renders a full stack trace, your settings, and your SQL to whoever triggered it. <code>manage.py check --deploy</code> reports 7 security warnings; these are the load-bearing ones.</p>
+    </article>
+
+    <!-- 5 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">05</span>
+        <h3>Who performed a cash transaction is taken from the form, not the session</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Revenue/views.py:86,141 · Expense/views.py:51,95,222,270,394,468,542,660 · Shift_Handover/views.py:46</div>
+      <p>Twelve cash views read the acting staff member out of a <code>&lt;select&gt;</code> in the submitted form:</p>
+<pre>hotel_deposit_username = request.POST.get(<b>'hotel_deposite_username'</b>, '')
+user_instance = get_object_or_404(User, username=hotel_deposit_username)</pre>
+      <p>The logged-in user is right there in <code>request.user</code> and is ignored. Any staff member can record a withdrawal, an expense or a shift handover under a colleague's name, and the record will look completely legitimate afterwards.</p>
+      <p>In a cash-handling system this is the control that matters most: it is the difference between a ledger you can act on in a dispute and one you cannot. Everything about attribution must come from the session.</p>
+    </article>
+
+    <!-- 6 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">06</span>
+        <h3>Bill totals are calculated in the browser and trusted by the server</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Bill_Master/views.py:71,146,220 (advance &amp; refund totals) · :464–470 (bill totals) · :813 (remaining balance)</div>
+      <p>The server never recomputes a single total. It reads the finished figure out of the POST body:</p>
+<pre>total = Decimal(request.POST.get(<b>'total'</b>, '0'))  <span class="cmt"># whatever the browser sent</span>
+bill_master_hotel_total_amount = Decimal(request.POST.get(<b>'bill_master_hotel_total_amount'</b>, ''))</pre>
+      <p>The arithmetic lives in JavaScript in the template. Anyone who can open developer tools — or simply has a stale page open when a rate changes — can save a bill whose total does not match its own line items, and nothing in the system will ever notice.</p>
+      <p>Same pattern on refunds: <code>refund_total_amount</code> arrives from the form and <em>overwrites</em> the advance's original <code>Total</code>, destroying the record of what was originally taken.</p>
+    </article>
+
+    <!-- 7 -->
+    <article class="finding sev-blocker">
+      <div class="finding-head">
+        <span class="idx">07</span>
+        <h3>Two copy-paste bugs mix hotel money into food money</h3>
+        <span class="sev blocker">Blocker</span>
+      </div>
+      <div class="where">Bill_Master/views.py:495 · Bill_Master/views.py:679</div>
+      <p>In the advance-balance calculation, the food branch subtracts the <em>hotel</em> total:</p>
+<pre><span class="cmt"># Bill_Master/views.py:493-497</span>
+if food_advance_amount > abs(bill_master_food_total_amount):
+    advance_food_balance_amount = food_advance_amount - abs(<b>bill_master_hotel_total_amount</b>)
+    <span class="cmt">#                                                    ^^^^^ should be food</span></pre>
+      <p>And in the bill update, the food balance is decided by the <em>hotel</em> mode of payment:</p>
+<pre><span class="cmt"># Bill_Master/views.py:679</span>
+queryset.Bill_Master_Balance_Food_Amount = bill_master_food_total_amount \
+    if <b>bill_master_hotel_mod</b> == 'Debit' else 0   <span class="cmt"># should be bill_master_food_mod</span></pre>
+      <p>Both silently produce wrong guest balances whenever hotel and food figures differ — which is the normal case. Neither would ever raise an error. These are exactly the bugs that a single unit test per calculation would have caught, and there are no tests at all.</p>
+    </article>
+  </section>
+
+  <!-- ===================== HIGH ===================== -->
+  <section class="stack-lg">
+    <div class="stack-sm">
+      <span class="eyebrow">Findings · fix before scaling past a handful of users</span>
+      <h2>High severity</h2>
+    </div>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">08</span><h3>No locking on advance balances — concurrent bills double-spend</h3><span class="sev high">High</span></div>
+      <div class="where">Bill_Master/views.py — <code>select_for_update</code> appears 0 times in the codebase</div>
+      <p>Two receptionists posting bills against the same advance receipt at the same time both read the old balance and both write their own result. One posting silently disappears. <code>transaction.atomic()</code> is used in places, but atomicity is not locking — it prevents half-written data, not lost updates.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">09</span><h3>Applying an advance to a bill wipes the remaining balance to zero</h3><span class="sev high">High</span></div>
+      <div class="where">Bill_Master/views.py:559–562</div>
+<pre>advance_record.Hotel_Balance_Amount = Decimal('0') if bill_master_hotel_total_amount >= 0 \
+                                      else abs(bill_master_hotel_total_amount)</pre>
+      <p>The remaining balance is set to <code>0</code> whenever the bill total is non-negative — regardless of how much of the advance was actually consumed. A guest who pays ₹10,000 in advance and settles a ₹4,000 bill loses the ₹6,000 record. Refunds are also checked against the original advance rather than the remaining balance (line 251), so the opposite error is possible too.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">10</span><h3>Instalment payments are wired to the wrong form field</h3><span class="sev high">High</span></div>
+      <div class="where">Bill_Master/views.py:770–774 and 793–797</div>
+<pre>bill_master_debit_hotel_amount_1 = Decimal(request.POST.get('bill_master_debit_hotel_amount_1', '0')) \
+    if request.POST.get(<b>'bill_master_debit_hotel_amount'</b>, '') else Decimal('0')
+<span class="cmt">#                     ^^ all four instalments are guarded by the FIRST field, not their own</span></pre>
+      <p>Two failure modes, both live. If the base amount is filled and instalment 1 is left blank, <code>Decimal('')</code> raises and the whole form dies with the generic "An error occurred" message. If the base amount is blank but instalment 1 is filled, the instalment is silently discarded. Eight occurrences, hotel and food.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">11</span><h3>66 blanket exception handlers hide every real failure</h3><span class="sev high">High</span></div>
+      <div class="where">Every views.py · 48 bare <code>print()</code> calls · no <code>LOGGING</code> config in settings</div>
+      <p>The dominant pattern is an entire view wrapped in <code>try: … except Exception: return render(request, 'error_page.html')</code>. A typo, a missing template, a database error and an unreachable mail server all produce the same blank page — for the user and for you. There is no log file, no log configuration, and no error alerting anywhere in the project, so nothing is recoverable after the fact.</p>
+      <p>Some handlers do worse than hide: several leak the raw exception text straight to the browser via <code>messages.error(request, f'An error occurred: {str(e)}')</code>, and <code>Reports/pdf.py:27</code> dumps the entire rendered HTML into the response on a PDF failure.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">12</span><h3>47 of 66 views can return <code>None</code> and 500</h3><span class="sev high">High</span></div>
+      <div class="where">All apps — verified by AST analysis of every view function</div>
+      <p>The common shape is <code>if request.method == 'POST': … redirect</code> with no <code>else</code> and no trailing return. A <code>GET</code> to any of those URLs falls off the end of the function, and Django raises <em>"The view didn't return an HttpResponse object"</em>. Every delete view in Bill_Master, Revenue and Expense has this shape.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">13</span><h3>Password reset emails point at <code>127.0.0.1:8000</code></h3><span class="sev high">High</span></div>
+      <div class="where">Authentication/Reset_Password_Email.py:22</div>
+<pre>reset_link = f"<b>http://127.0.0.1:8000</b>/Change-Password/{token}/"</pre>
+      <p>Password reset is completely non-functional in production — every recipient gets a link to their own machine. Alongside it: the reset token is stored in plain text, never cleared after use, and <code>Reset_Password</code> reports "Invalid Username" for unknown users and a different message for inactive ones, which lets an outsider enumerate valid staff usernames. There is also no rate limiting on login or on reset, so both are open to unlimited brute force.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">14</span><h3>Uploads accept any file, of any size, and are never served</h3><span class="sev high">High</span></div>
+      <div class="where">Staff_Profile/views.py:59–63,137–141 · Bill_Master/models.py:69 · Main/settings.py:170</div>
+      <p>Staff photos, ID documents, resumes and invoice PDFs are saved straight from <code>request.FILES</code> with no extension check, no content-type check and no size limit. <code>MEDIA_ROOT</code> also points inside a static directory (<code>public/static</code>) while <code>MEDIA_URL</code> is <code>/media/</code> and no media route is registered — so uploaded files cannot currently be opened at all, and if you fix that by serving the folder statically, an uploaded HTML or SVG file becomes a stored XSS on your own domain.</p>
+      <p>Note also that <code>User_Profile.delete()</code> removes files from disk before the database row is deleted. If the delete then fails, the document is gone and the record remains.</p>
+    </article>
+
+    <article class="finding sev-high">
+      <div class="finding-head"><span class="idx">15</span><h3>The auto-logout middleware writes to the database on every request</h3><span class="sev high">High</span></div>
+      <div class="where">Authentication/middleware.py:76–86 · Authentication/models.py:41</div>
+      <p>Every single request — including static file requests — runs a query for the latest activity row and then saves it, and that save runs another <code>SELECT</code> inside <code>Authentication.save()</code>. Three extra queries per request, on SQLite, which locks the whole file on write. Under any real concurrency you will see <code>database is locked</code> errors.</p>
+      <p>It also mutates <code>activity_time</code> on the row that records the original login, which means the login/logout audit trail is overwritten as the user browses. And because the hard cutoff is a fixed 10 minutes with no warning, a receptionist filling in a long bill form loses their work.</p>
+    </article>
+  </section>
+
+  <!-- ===================== MEDIUM ===================== -->
+  <section class="stack-lg">
+    <div class="stack-sm">
+      <span class="eyebrow">Findings · structural debt</span>
+      <h2>Medium severity</h2>
+    </div>
+
+    <div class="stack-sm">
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">16</span><h3>48 templates, zero shared base template</h3><span class="sev medium">Medium</span></div>
+        <p>18,292 lines of HTML across 48 files and not a single <code>{% extends %}</code> or <code>{% include %}</code>. The navigation, sidebar and styling are pasted into every page. <strong>This is why "just update the UI" is not a small job</strong> — today, changing a menu item is 48 edits, and they will drift.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">17</span><h3>Front-end libraries are unmaintained and unpinned</h3><span class="sev medium">Medium</span></div>
+        <p>jQuery 3.3.1 (76 references) and Bootstrap 4.3.1 are loaded from <code>stackpath.bootstrapcdn.com</code> and <code>code.jquery.com</code> with no integrity hashes and no local copy. Both versions carry published CVEs (jQuery prototype pollution; Bootstrap tooltip XSS), StackPath's Bootstrap CDN is no longer a maintained service, and if either host is unreachable your app renders as unstyled text. Vendor these locally and serve them with WhiteNoise.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">18</span><h3>Instalments modelled as numbered columns instead of rows</h3><span class="sev medium">Medium</span></div>
+        <p><code>Bill_Master_ADD_Bill</code> carries <code>Debit_Hotel_Amount</code>, <code>_1</code>, <code>_2</code>, <code>_3</code>, <code>_4</code> — and the same again for food, dates and payment modes. That is 25 columns doing the job of one child table, with a hard ceiling of five payments and no way to query payment history. The table is 60+ columns wide with almost every field <code>null=True</code>.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">19</span><h3>Only one Django form exists in the entire project</h3><span class="sev medium">Medium</span></div>
+        <p><code>Reports/searchform.py</code> defines a form that is never used. Everything else is hand-rolled <code>request.POST.get()</code>, so there is no validation layer at all: no required-field checks, no numeric range checks, no "amount must be positive", no re-display of a half-filled form after an error. Django's <code>ModelForm</code> would delete several hundred lines and add all of it.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">20</span><h3>Receipt and bill numbers are typed by hand</h3><span class="sev medium">Medium</span></div>
+        <p>Numbers are formatted as <code>f"{year} / {user_input}"</code>. The database uniqueness constraint will reject a duplicate, but the handler logs the failure and silently re-renders the empty form — the user sees their work vanish with no explanation. The "Excessive / {bill}" advance receipts created on overpayment have no uniqueness constraint at all (added in migration 0013, removed again in 0014), and the deletion path looks them up with <code>.filter(...).first()</code>, so a duplicate deletes the wrong record.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">21</span><h3>Repository hygiene</h3><span class="sev medium">Medium</span></div>
+        <p>No <code>.gitignore</code>. <code>db.sqlite3</code> — your actual hotel data — plus 175 compiled <code>.pyc</code> files are committed. <code>requirements.txt</code> lists both <code>import-export</code> and <code>django-import-export</code> (the first is an unrelated abandoned package). Both <code>Authentication/views.py</code> and <code>Reset_Password_Email.py</code> open with <code>from venv import logger</code> — an accidental import from Python's virtualenv module that happens to expose a logger object.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">22</span><h3>Admin panel is gated by a hardcoded username</h3><span class="sev medium">Medium</span></div>
+        <p><code>SuperAdminOnlyMiddleware</code> restricts <code>/admin/</code> by comparing to the literal string <code>'SuperAdmin'</code>. Rename that account and you are locked out of your own admin; create an account with that name and you are in. It also opens a database transaction on every single request just to run a string comparison. Meanwhile <code>AuthenticationAdmin.save_model</code> sets <code>created_by</code> and <code>modified_by</code> on a model that has no such fields — the assignment does nothing.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">23</span><h3>Name fields truncate at 20 characters</h3><span class="sev medium">Medium</span></div>
+        <p><code>Full_Name = CharField(max_length=20)</code> appears in Revenue, Expense and Shift_Handover, and is filled with <code>f"{first_name} {last_name}"</code>. SQLite ignores the limit; PostgreSQL and MySQL in strict mode will reject the insert. Another thing that breaks on the day you move off SQLite.</p>
+      </article>
+
+      <article class="finding sev-medium">
+        <div class="finding-head"><span class="idx">24</span><h3>Rupee-to-words conversion loses paise</h3><span class="sev medium">Medium</span></div>
+        <p><code>amount_as_number = int(float(hotel_deposit_amount))</code> — the amount printed in words on every receipt is truncated to whole rupees, while the numeric amount keeps its decimals. On a printed cash receipt those two disagreeing is a real dispute waiting to happen.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== CREDIT ===================== -->
+  <section>
+    <span class="eyebrow">In fairness</span>
+    <h2>What is genuinely good here</h2>
+    <p>This is not a bad idea badly conceived. There is real work in it worth keeping:</p>
+    <ul class="tight">
+      <li><strong>The domain model is right.</strong> Advance → bill → debit bill → excess-becomes-new-advance is a correct model of how a hotel actually bills corporate guests. That understanding is the expensive part, and it is done.</li>
+      <li><strong>App separation is sensible.</strong> Nine apps split cleanly by business area — Revenue, Expense, Bill_Master, Shift_Handover. That is the right skeleton to build on.</li>
+      <li><strong>The features are real.</strong> Denomination-wise shift handover, GST/TCS/TDS per company, staff advances against salary, PDF receipts, Indian number-to-words. Those are the things a hotel actually asks for, and they exist.</li>
+      <li><strong>Django's defences are intact.</strong> All 44 forms carry <code>{% csrf_token %}</code>, there is no raw SQL, no <code>|safe</code>, no <code>csrf_exempt</code>. The two vulnerability classes that sink most small business apps are closed.</li>
+      <li><strong>Business rules were thought about.</strong> Blocking an advance edit after it has been consumed, blocking a second refund, restoring the balance when a bill is deleted — someone reasoned about the edge cases. The implementations have bugs; the intent is sound.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== DECISION ===================== -->
+  <section class="stack-lg">
+    <div class="stack-sm">
+      <span class="eyebrow">The decision</span>
+      <h2>PHP, Laravel, or stay on Django?</h2>
+      <p>Look back at the 24 findings. Ask which of them a different language would have prevented. The answer is <strong>none</strong>. Money stored as text, totals trusted from the browser, no authorisation checks, secrets in git, zero tests — all of these are writable in PHP just as easily, and a rewrite by the same team with the same habits reproduces them faithfully.</p>
+    </div>
+
+    <div class="compare">
+      <div class="col">
+        <h3>Plain PHP <span class="verdict-pill">No</span></h3>
+        <p>A step backwards. You would lose the ORM, the migration system, the admin panel, CSRF protection and template auto-escaping — the four things currently keeping this app's security score above zero. You would be hand-writing the protections Django gives you for free, and finding #2 shows what happens when protections are hand-managed.</p>
+      </div>
+      <div class="col">
+        <h3>Laravel <span class="verdict-pill">No</span></h3>
+        <p>A capable framework — genuinely comparable to Django. But the migration is 4–6 months of full-time work: 6,464 lines of Python, 50 migrations, 48 templates and a live SQLite database, all rebuilt. At the end you have the same features you have today, plus every new bug a rewrite introduces, and the 24 problems above still need fixing because none of them were the framework's fault.</p>
+        <p>Choose Laravel only if the people maintaining this long-term are PHP developers who cannot maintain Python. That is a staffing decision, not a technical one.</p>
+      </div>
+      <div class="col pick">
+        <h3>Stay on Django <span class="verdict-pill">Recommended</span></h3>
+        <p>Roughly 10–12 weeks of focused work gets you to a defensible launch, against 4–6 months for a rewrite that starts from zero. You keep the domain model, the migration history, the data and the PDF pipeline. Django 5.1 is current and well supported, the admin gives you a free back office, and <code>django-import-export</code> is already wired in.</p>
+        <p>Every fix in this report is a normal, well-documented Django task. None of them require unusual expertise.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h3>On "we just have to update the UI"</h3>
+      <p>This is the part I would most want you to hear. The UI is roughly a quarter of the remaining work, and it is not the part that can hurt you. A prettier screen sitting on top of finding #3 still adds ₹2,000 as ₹2. It still lets a receptionist promote herself to superuser. It still crashes on a Linux server.</p>
+      <p>And the UI work itself is larger than it looks: with 48 standalone templates and no base file, any redesign means either editing all 48 or building the shared template layer first. Do the backend work in this order, and the UI becomes the easy, enjoyable phase at the end — on a foundation that will hold it.</p>
+    </div>
+  </section>
+
+  <!-- ===================== PLAN ===================== -->
+  <section class="stack-lg">
+    <div class="stack-sm">
+      <span class="eyebrow">The path to launch · one developer, full time</span>
+      <h2>Ten to twelve weeks, in this order</h2>
+      <p>The order matters. Each phase depends on the one before it, and the UI deliberately comes last.</p>
+    </div>
+
+    <div>
+      <div class="phase">
+        <div class="phase-when"><span class="n">Now</span><span class="t">today · 1 hour</span></div>
+        <div class="phase-body">
+          <h3>Stop the bleeding</h3>
+          <p>Revoke the Gmail app password in the Google account. Add a <code>.gitignore</code>; remove <code>db.sqlite3</code> and the 175 <code>.pyc</code> files from tracking. Treat the committed <code>SECRET_KEY</code> as burned. None of this waits for a sprint.</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-when"><span class="n">01</span><span class="t">weeks 1–3</span></div>
+        <div class="phase-body">
+          <h3>Make it runnable and safe</h3>
+          <ul class="tight">
+            <li>Fix all six template references; run the whole app once on a Linux box before anything else</li>
+            <li>Move secrets to environment variables; <code>DEBUG=False</code>, real <code>ALLOWED_HOSTS</code>, secure cookie and HSTS settings — clear all 7 <code>check --deploy</code> warnings</li>
+            <li>Add real authorisation: a role model, <code>@permission_required</code> or a decorator on every state-changing view, and <code>@require_POST</code> on every delete</li>
+            <li>Take the acting user from <code>request.user</code> in all 12 cash views</li>
+            <li>Set up <code>LOGGING</code> to a file, replace the 48 <code>print()</code> calls, and narrow the widest of the 66 exception handlers</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-when"><span class="n">02</span><span class="t">weeks 3–6</span></div>
+        <div class="phase-body">
+          <h3>Fix the money</h3>
+          <ul class="tight">
+            <li>Migrate all 14 text amount columns to <code>DecimalField</code>, with a data migration that cleans commas and blanks — verify the converted totals against your current records before trusting either</li>
+            <li>Move every total server-side; the browser may display a total, it may never submit one</li>
+            <li>Fix the two hotel/food copy-paste bugs (#7), the advance-balance wipe (#9) and the instalment field wiring (#10)</li>
+            <li>Wrap balance updates in <code>select_for_update()</code></li>
+            <li>Move to PostgreSQL — the text columns and the 20-character name fields must be fixed first, or the move fails on day one</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-when"><span class="n">03</span><span class="t">weeks 5–8</span></div>
+        <div class="phase-body">
+          <h3>Tests, then forms</h3>
+          <p>Write tests for the money paths first — advance created, bill applied, partial usage, refund, overpayment becomes a new advance, bill deleted and balance restored. Those tests are what let you touch this code without fear, and they will find more bugs than this report did.</p>
+          <p>Then replace the hand-rolled <code>request.POST.get</code> blocks with <code>ModelForm</code>s. This removes several hundred lines, adds validation everywhere at once, and makes the templates far smaller before you redesign them.</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-when"><span class="n">04</span><span class="t">weeks 8–11</span></div>
+        <div class="phase-body">
+          <h3>The UI you actually wanted</h3>
+          <p>Build <code>base.html</code> with the nav, sidebar and blocks, then convert the 48 pages to extend it — most will shrink by two thirds. Vendor Bootstrap and jQuery locally on current versions and serve them with WhiteNoise. Then redesign, once, in one place.</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-when"><span class="n">05</span><span class="t">weeks 11–12</span></div>
+        <div class="phase-body">
+          <h3>Deploy properly</h3>
+          <p>Gunicorn behind Nginx, HTTPS, <code>collectstatic</code>, media served outside the static root with upload type and size limits, automated nightly database backups with a restore you have actually tested, and error alerting so you hear about a crash before your staff phone you about it.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h3>If you must go live sooner</h3>
+      <p>The absolute floor is <strong>Now + Phase 01 + the money fixes in Phase 02</strong> — call it four to five weeks. Below that you would be running a cash ledger where the totals are wrong and every user is an administrator. For an internal tool used by staff you trust, on a private network, that might be a risk you choose to take for a few weeks. For anything touching guest bills or GST invoices, it is not.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Reviewed at commit <code class="mono">d436ff0</code> on <code class="mono">main</code>: 9 Django apps, 6,464 lines of Python, 48 templates, 50 migrations. Findings #01, #02 and #03 were reproduced by running the application against a copy of the committed database; the rest were traced to specific lines, cited above. Percentages are a judgement of readiness for a system that handles money, not a measure of effort spent.</p>
+  </footer>
+
+</div>

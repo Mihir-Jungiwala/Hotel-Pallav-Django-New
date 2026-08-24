@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px); /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .content {
+            padding: 20px;
+            font-size: 18px;
+            color: black;
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1px;
+            text-align: center; /* Center align content */
+        }
+        
+        /* Style for the Add User button */
+        .add-user-btn {
+            background-color: #6c757d; /* Grey color */
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            text-decoration: none; /* Remove underline */
+        }
+
+        .add-user-btn:hover {
+            background-color: #6c757d; /* Grey color */
+            color: #fff; /* Change text color on hover */
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Hello, {{ request.user.username }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.username == 'SuperAdmin' %}
+                            <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% elif request.user.is_superuser %}
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% else %}
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handvoer-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>                
+                <!-- <li><a href="/Reports-Profile/">Reports</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+            <div class="content">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <h2>Food Cash Miscellaneous Expense</h2>
+                    <div class="form-group">
+                        <label for="staff_advance_date" class="form-label">Date</label>
+                        <input type="date" id="date" name="staff_advance__date" class="form-control" value="{{ current_date|date:'Y-m-d' }}" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="staff_advance" class="form-label">Time</label>
+                        <input type="time" id="staff_advance" name="staff_advance__time" class="form-control" readonly value="{{ current_time }}" style="-webkit-appearance: textfield;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="staff_advance_username" class="form-label">Username</label>
+                        <input type="text" id="staff_advance_username" name="staff_advance_username" class="form-control" readonly value="{{ request.user.username }}">
+                    </div>
+                        
+                        <div class="form-group">
+                            <label for="staf_advance_year_month" class="form-label">Year-Month</label>
+                            <select id="staf_advance_year_month" name="staff_advance_year_month" class="form-control" >
+                                <!-- Option for the current year and month -->
+                                <option value="{{ current_year }}-{{ current_month }}">{{ current_year }} - {{ current_month_name }}</option>
+                            </select>
+                        </div>
+                    
+                    <div class="form-group">
+                        <label for="staff_advance_name" class="form-label">Staff Name</label>
+                        <select id="staff_advance_name" name="staff_advance_name" class="form-control" required>
+                            <option value="" disabled selected>Select Staff Name</option>
+                            {% for profile in user_profiles %}
+                                <option value="{{ profile.id }}">{{ profile.User_Full_Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    
+
+
+                    
+                    
+                    <div class="form-group">
+                        <label for="advance_amount" class="form-label">Amount</label>
+                        <input type="text" id="advance_amount" name="advance_amount" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="staff_advance_instruction" class="form-label">Instruction</label>
+                        <input type="text" id="staff_advance_instruction" name="staff_advance_instruction" class="form-control">
+                    </div>
+                    
+                    <input type="submit" value="Submit" class="btn btn-success">
+                    <a href="/Expense-Profile/" class="btn btn-secondary">Cancel</a>
+                </form>
+                
+        </div>
+    </div>
+
+    <footer>
+        <div style="margin: 0 auto;">© 2024 Easy Hotel Solutions. All right reserved</div>
+    </footer>   
+    <script>
+        // Function to format date and time with leading zeros if needed
+        function formatTime(time) {
+            return time < 10 ? '0' + time : time;
+        }
+    
+        // Function to update the year-month dropdown based on the current date and time
+        function updateYearMonthDropdown() {
+            // Get the current date and time
+            var now = new Date();
+            var currentYear = now.getFullYear();
+            var currentMonth = now.getMonth() + 1; // Months are zero-based, so add 1
+    
+            // Set the value to year-month dropdown
+            var yearMonthSelect = document.getElementById('staf_advance_year_month'); // Updated ID
+            yearMonthSelect.innerHTML = ''; // Clear existing options
+    
+            // Loop through previous 3 months, current month, and next 3 months
+            for (var i = -3; i <= 3; i++) {
+                var monthOffset = currentMonth + i;
+                var yearOffset = currentYear;
+    
+                // Adjust year if the month is outside the range [1, 12]
+                while (monthOffset < 1 || monthOffset > 12) {
+                    if (monthOffset < 1) {
+                        monthOffset += 12;
+                        yearOffset--;
+                    } else if (monthOffset > 12) {
+                        monthOffset -= 12;
+                        yearOffset++;
+                    }
+                }
+    
+                var monthName = getMonthName(monthOffset);
+                var option = document.createElement('option');
+                option.text = yearOffset + ' - ' + monthName; // Set display text as 'YYYY - Month'
+                option.value = yearOffset + ' - ' + monthName; // Set value as 'YYYY - Month' for saving
+    
+                // Set selected attribute for the current month
+                if (i === 0) {
+                    option.selected = true;
+                }
+    
+                yearMonthSelect.add(option);
+            }
+        }
+    
+        // Function to get the month name
+        function getMonthName(month) {
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return monthNames[month - 1];
+        }
+    
+        // Update the dropdown initially
+        updateYearMonthDropdown();
+    
+        // Update the dropdown periodically (every minute)
+        setInterval(updateYearMonthDropdown, 60000); // 60000 milliseconds = 1 minute
+    
+        // Get current date and time
+        var now = new Date();
+        var currentDate = now.getFullYear() + '-' + formatTime(now.getMonth() + 1) + '-' + formatTime(now.getDate());
+        var currentTime = formatTime(now.getHours()) + ':' + formatTime(now.getMinutes());
+    
+        // Set the values to date and time input fields
+        document.getElementById('date').value = currentDate;
+        document.getElementById('staff_advance').value = currentTime; // Updated ID for time input field
+    </script>
+    
+    
+    
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

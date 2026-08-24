@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px); /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center; /* Center align content */
+            align-items: center;
+            margin-top: 1px;
+        }
+
+        /* Custom CSS for black text color in modal content */
+        .modal-content,
+        .modal-header,
+        .modal-title,
+        .modal-body,
+        .modal-footer,
+        .modal-content * {
+            color: black !important;
+        }
+
+        .float-left {
+            float: left;
+            margin-right: 10px; /* Adjust margin as needed */
+        }
+        /* CSS for label text color */
+.form-label {
+    color: black;
+}
+
+        
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Hello, {{ request.user }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.username == 'SuperAdmin' %}
+                            <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% elif request.user.is_superuser %}
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% else %}
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handvoer-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>
+                <!-- <li><a href="/Reports-Profile/">Reports</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+
+
+            <!-- Form to add advance -->
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+
+
+
+
+<div class="form-group">
+    <label for="bill_Number" class="form-label">Bill Number</label>
+    <input type="text" id="bill_Number" name="bill_Number" class="form-control" value="{{bill_master_bill_update.Bill_Master_Bill_Number}}" readonly    >
+</div>
+
+
+                <div class="form-group">
+                    <label for="bill_date" class="form-label">Bill Date</label>
+                    <input type="date" id="bill_date" name="bill_date" class="form-control"  value="{{bill_master_bill_update.Bill_Master_Bill_Date}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_Guest_Name" class="form-label">Guest Name</label>
+                    <input type="text" id="bill_master_Guest_Name" name="bill_master_Guest_Name" class="form-control" value="{{bill_master_bill_update.Bill_Master_Guest_Name}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_mobile_number" class="form-label">Mobile Number</label>
+                    <input type="text" id="bill_master_mobile_number" name="bill_master_Mobile_Number" class="form-control" value="{{bill_master_bill_update.Bill_Master_Mobile_Number}}">
+                </div>
+                <div class="form-group">
+                    <label for="select_company" class="form-label">Select Company</label>
+                    <select id="select_company" name="select_company" class="form-control" required>
+                        {% if bill_master_bill_update.Bill_Master_Bill_Company %}
+                            <option value="{{ bill_master_bill_update.Bill_Master_Bill_Company.id }}" selected>{{ bill_master_bill_update.Bill_Master_Bill_Company.Company_Name }}</option>
+                        {% else %}
+                            <option value="" disabled selected>Select Company</option>
+                        {% endif %}
+                        {% for company in companies %}
+                            <option value="{{ company.id }}">{{ company.Company_Name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+
+                <div class="form-group">
+                    <label for="food_plan" class="form-label">Plan</label>
+                    <select id="food_plan" name="Plan" class="form-control" required>
+                        <option value="None" disabled>Select Plan</option>
+                        <option value="EP" {% if bill_master_bill_update.Bill_Master_Hotel_Plan == 'EP' %} selected {% endif %}>EP</option>
+                        <option value="CP" {% if bill_master_bill_update.Bill_Master_Hotel_Plan == 'CP' %} selected {% endif %}>CP</option>
+                        <option value="MAP" {% if bill_master_bill_update.Bill_Master_Hotel_Plan == 'MAP' %} selected {% endif %}>MAP</option>
+                        <option value="AP" {% if bill_master_bill_update.Bill_Master_Hotel_Plan == 'AP' %} selected {% endif %}>AP</option>
+                    </select>
+                </div>
+                
+                
+                <div class="form-group">
+                    <label for="bill_master_hotel_amount" class="form-label">Hotel  Amount</label>
+                    <input type="text" id="bill_master_hotel_amount" name="bill_master_hotel_amount" class="form-control" value="{{bill_master_bill_update.Bill_Master_Hotel_Amount}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_plan_amount" class="form-label">Plan Amount</label>
+                    <input type="text" id="bill_master_plan_amount" name="bill_master_plan_amount" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_laundry_amount" class="form-label">Laundry Amount</label>
+                    <input type="text" id="bill_master_laundry_amount" name="bill_master_laundry_amount" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_hotel_gst" class="form-label">Hotel GST</label>
+                    <input type="text" id="bill_master_hotel_gst" name="bill_master_hotel_gst" class="form-control" readonly value="{{bill_master_bill_update.Bill_Master_Hotel_GST}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_hotel_mod" class="form-label">Hotel Mode of Payment</label>
+                    <select id="bill_master_hotel_mod" name="bill_master_hotel_mod" class="form-control" required>
+                        <option value="None" disabled>Select Mode of Payment</option>
+                        <option value="Cash" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'Cash' %} selected {% endif %}>Cash</option>
+                        <option value="Card" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'Card' %} selected {% endif %}>Card</option>
+                        <option value="Complimentary" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'Complimentary' %} selected {% endif %}>Complimentary</option>
+                        <option value="Debit" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'Debit' %} selected {% endif %}>Debit</option>
+                        <option value="Bank Transfer" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'Bank Transfer' %} selected {% endif %}>Bank Transfer</option>
+                        <option value="Cheque" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'Cheque' %} selected {% endif %}>Cheque</option>
+                        <option value="UPI" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'UPI' %} selected {% endif %}>UPI</option>
+                        <option value="None" {% if bill_master_bill_update.Bill_Master_Hotel_Mode_Of_Payment == 'None' %} selected {% endif %}>None</option>
+                    </select>
+                </div>
+                
+                
+                
+                
+                <div class="form-group">
+                    <label for="bill_master_food_amount" class="form-label">Food Amount</label>
+                    <input type="text" id="bill_master_food_amount" name="bill_master_food_amount" class="form-control" value="{{bill_master_bill_update.Bill_Master_Food_Amount}}">
+                </div>
+               
+                
+                <div class="form-group">
+                    <label for="bill_master_food_gst" class="form-label">Food GST</label>
+                    <input type="text" id="bill_master_food_gst" name="bill_master_food_gst" class="form-control" value="{{bill_master_bill_update.Bill_Master_Food_GST}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_food_mod" class="form-label">Food Mode of Payment</label>
+                    <select id="bill_master_food_mod" name="bill_master_food_mod" class="form-control" required>
+                        <option value="None" disabled>Select Mode of Payment</option>
+                        <option value="Cash" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'Cash' %} selected {% endif %}>Cash</option>
+                        <option value="Card" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'Card' %} selected {% endif %}>Card</option>
+                        <option value="Complimentary" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'Complimentary' %} selected {% endif %}>Complimentary</option>
+                        <option value="Debit" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'Debit' %} selected {% endif %}>Debit</option>
+                        <option value="Bank Transfer" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'Bank Transfer' %} selected {% endif %}>Bank Transfer</option>
+                        <option value="Cheque" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'Cheque' %} selected {% endif %}>Cheque</option>
+                        <option value="UPI" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'UPI' %} selected {% endif %}>UPI</option>
+                        <option value="None" {% if bill_master_bill_update.Bill_Master_Food_Mode_Of_Payment == 'None' %} selected {% endif %}>None</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bill_master_hotel_total_amount" class="form-label">Hotel Total Amount</label>
+                    <input type="text" id="bill_master_hotel_total_amount" name="bill_master_hotel_total_amount" class="form-control" readonly value="{{bill_master_bill_update.Bill_Master_Balance_Hotel_Amount}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_food_total_amount" class="form-label">Food Total Amount</label>
+                    <input type="text" id="bill_master_food_total_amount" name="bill_master_food_total_amount" class="form-control" readonly value="{{bill_master_bill_update.Bill_Master_Balance_Food_Amount}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_name" class="form-label">Reference Name</label>
+                    <input type="text" id="bill_master_name" name="bill_master_name" class="form-control" value="{{bill_master_bill_update.Bill_Master_Reference_Name}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_number" class="form-label">Reference Mobile Number</label>
+                    <input type="text" id="bill_master_number" name="bill_master_Number" class="form-control" value="{{bill_master_bill_update.Bill_Master_Reference_Mobile_Number}}">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_instruction" class="form-label">Instruction</label>
+                    <input type="text" id="bill_master_instruction" name="bill_master_instruction" class="form-control" value="{{bill_master_bill_update.Bill_Master_Instruction}}">
+                </div>
+                <h2>PDF Document</h2>
+                <div class="form-group">
+                    <label for="upload_invoice_PDF" class="form-label">Upload Invoice PDF</label>
+                    <input type="file" id="upload_invoice_PDF" name="upload_invoice_PDF" class="form-control-file" accept=".pdf" value="{{bill_master_bill_update.Bill_Master_Debit_BIll_PDF}}">
+                </div>
+                <input type="submit" value="Submit" class="btn btn-success">
+                <a href="/Bill-Master-Advance-Profile/" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        © 2024 Easy Hotel Solutions. All right reserved
+    </footer>
+    <script>
+        // Function to show/hide the debit option based on whether a company is selected
+        function toggleDebitOption() {
+            var debitOptionHotel = document.querySelector('#bill_master_hotel_mod option[value="Debit"]');
+            var debitOptionFood = document.querySelector('#bill_master_food_mod option[value="Debit"]');
+            var selectCompany = document.getElementById('select_company');
+    
+            // Check if a company is selected
+            if (selectCompany.value !== "") {
+                // If a company is selected, show the debit option in both dropdowns
+                debitOptionHotel.style.display = 'block';
+                debitOptionFood.style.display = 'block';
+            } else {
+                // If no company is selected, hide the debit option in both dropdowns
+                debitOptionHotel.style.display = 'none';
+                debitOptionFood.style.display = 'none';
+            }
+        }
+    
+        // Event listener to toggle the debit option visibility when a company is selected
+        document.getElementById('select_company').addEventListener('change', toggleDebitOption);
+    
+        // Call the function initially to set the initial state
+        toggleDebitOption();
+    </script>
+    
+    
+     
+    <script>
+        // Get the current date
+        var today = new Date();
+    
+        // Format the date as YYYY-MM-DD
+        var dateString = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+    
+        // Set the value of the date input field to the current date
+        document.getElementById('bill_date').value = dateString;
+    
+        // Set the bill number with the current year followed by a slash
+        var billNumberContext = "{{ bill_master_bill_update.Bill_Master_Bill_Number }}";
+        if (billNumberContext) {
+            document.getElementById('bill_Number').value = billNumberContext;
+        } else {
+            document.getElementById('bill_Number').value = today.getFullYear() + '/';
+        }
+    
+        // Function to calculate hotel total amount
+        function calculateHotelTotalAmount() {
+            var hotelAmount = parseFloat(document.getElementById('bill_master_hotel_amount').value) || 0;
+            var hotelTaxRate = 0.12; // Assuming 12% tax
+            var hotelTax = hotelAmount * hotelTaxRate;
+            var hotelLaundryAmount = parseFloat(document.getElementById('bill_master_hotel_laundry_amount').value) || 0;
+            var hotelPlanAmount = parseFloat(document.getElementById('bill_master_hotel_plan_amount').value) || 0;
+            var totalHotelAmount = hotelAmount + hotelTax + hotelLaundryAmount - hotelPlanAmount;
+    
+            // Subtract hotel advance amount
+            var hotelAdvanceAmount = parseFloat(document.getElementById('hotel_advance_amount').value) || 0;
+    
+            // If advance amount exceeds total amount, make total amount negative
+            totalHotelAmount -= hotelAdvanceAmount;
+            if (totalHotelAmount < 0) {
+                totalHotelAmount = -Math.abs(totalHotelAmount);
+            }
+    
+            // Set the calculated value to the hotel total amount field
+            document.getElementById('bill_master_hotel_total_amount').value = totalHotelAmount.toFixed(2);
+    
+            // Set the calculated GST value to the hotel GST input box
+            document.getElementById('bill_master_hotel_gst').value = hotelTax.toFixed(2);
+    
+            // Set the food plan amount to be the same as hotel plan amount
+            var foodPlanAmount = hotelPlanAmount;
+            document.getElementById('bill_master_food_plan_amount').value = foodPlanAmount.toFixed(2);
+    
+            // Set food total amount equal to food plan amount plus manually entered food GST
+            var foodAmount = parseFloat(document.getElementById('bill_master_food_amount').value) || 0;
+            var foodGST = parseFloat(document.getElementById('bill_master_food_gst').value) || 0;
+            var foodLaundryAmount = hotelLaundryAmount; // Set food laundry amount equal to hotel laundry amount
+            var totalFoodAmount = foodAmount + foodGST + foodPlanAmount;
+    
+            // Subtract hotel laundry amount from food total amount
+            totalFoodAmount -= hotelLaundryAmount;
+    
+            // Subtract food advance amount
+            var foodAdvanceAmount = parseFloat(document.getElementById('food_advance_amount').value) || 0;
+    
+            // If advance amount exceeds total amount, make total amount negative
+            totalFoodAmount -= foodAdvanceAmount;
+            if (totalFoodAmount < 0) {
+                totalFoodAmount = -Math.abs(totalFoodAmount);
+            }
+    
+            document.getElementById('bill_master_food_total_amount').value = totalFoodAmount.toFixed(2);
+            document.getElementById('bill_master_food_laundry_amount').value = hotelLaundryAmount.toFixed(2); // Update food laundry amount field
+        }
+    
+        // Call the function when hotel amount field changes
+        document.getElementById('bill_master_hotel_amount').addEventListener('input', calculateHotelTotalAmount);
+    
+        // Call the function when hotel plan amount field changes
+        document.getElementById('bill_master_hotel_plan_amount').addEventListener('input', calculateHotelTotalAmount);
+    
+        // Call the function when hotel laundry amount field changes
+        document.getElementById('bill_master_hotel_laundry_amount').addEventListener('input', calculateHotelTotalAmount);
+    
+        // Call the function when hotel advance amount field changes
+        document.getElementById('hotel_advance_amount').addEventListener('input', calculateHotelTotalAmount);
+    
+        // Call the function when food amount field changes
+        document.getElementById('bill_master_food_amount').addEventListener('input', calculateHotelTotalAmount);
+    
+        // Call the function when food GST field changes
+        document.getElementById('bill_master_food_gst').addEventListener('input', calculateHotelTotalAmount);
+    
+        // Call the function initially to calculate total hotel amount
+        calculateHotelTotalAmount();
+    
+        // Add click event listener to all select-advance buttons
+        document.querySelectorAll('.select-advance').forEach(item => {
+            item.addEventListener('click', event => {
+                // Prevent default anchor behavior
+                event.preventDefault();
+    
+                // Get the data attributes of the clicked button
+                const receipt = item.getAttribute('data-receipt');
+                const guest = item.getAttribute('data-guest');
+                const hotelAmount = item.getAttribute('data-hotel-amount');
+                const foodAmount = item.getAttribute('data-food-amount');
+    
+                // Set the input values
+                document.getElementById('advance_receipt_number').value = receipt;
+                document.getElementById('paid_by').value = guest;
+                document.getElementById('hotel_advance_amount').value = hotelAmount;
+                document.getElementById('food_advance_amount').value = foodAmount;
+    
+                // Close the modal
+                $('#advanceModal').modal('hide');
+    
+                // Recalculate hotel total amount after selecting advance amount
+                calculateHotelTotalAmount();
+            });
+        });
+    </script>
+    
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

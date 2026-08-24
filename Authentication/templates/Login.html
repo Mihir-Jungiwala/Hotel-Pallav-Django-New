@@ -1,0 +1,38 @@
+{% extends "guest_base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+  <h1 class="font-display text-2xl font-bold text-pallav-900 mb-1">Welcome back</h1>
+  <p class="text-sm text-pallav-500 mb-6">Sign in to manage revenue, expenses and bills.</p>
+
+  <form method="POST" class="space-y-4" x-data="{ show: false }">
+    {% csrf_token %}
+    <div>
+      <label for="username" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide mb-1.5">Username</label>
+      <input type="text" id="username" name="username" required autofocus
+        class="w-full rounded-xl border border-pallav-200 px-4 py-3 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+    </div>
+    <div>
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="password" class="block text-xs font-bold text-pallav-500 uppercase tracking-wide">Password</label>
+        <a href="{% url 'resetpassword' %}" class="text-xs font-bold text-pallav-600 hover:text-pallav-800">Forgot password?</a>
+      </div>
+      <div class="relative">
+        <input :type="show ? 'text' : 'password'" id="password" name="password" required
+          class="w-full rounded-xl border border-pallav-200 px-4 py-3 pr-11 text-sm font-semibold text-pallav-900 focus:border-pallav-500 focus:ring-4 focus:ring-pallav-100 outline-none transition">
+        <button type="button" @click="show = !show" tabindex="-1"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-pallav-400 hover:text-pallav-700 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path x-show="!show" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+            <circle x-show="!show" cx="12" cy="12" r="3"/>
+            <path x-show="show" d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a21.4 21.4 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 7 11 7a21.4 21.4 0 01-3.22 4.42M14.12 14.12a3 3 0 11-4.24-4.24"/>
+            <path x-show="show" d="M1 1l22 22"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-pallav-600 to-pallav-800 hover:from-pallav-700 hover:to-pallav-900 text-white font-bold py-3 shadow-lg shadow-pallav-900/20 transition hover:-translate-y-0.5">
+      Sign In
+    </button>
+  </form>
+{% endblock %}

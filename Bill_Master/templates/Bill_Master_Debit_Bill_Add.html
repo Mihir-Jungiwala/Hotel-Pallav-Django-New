@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px);
+            /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            /* Center align content */
+            align-items: center;
+            margin-top: 1px;
+        }
+
+        /* Custom CSS for black text color in modal content */
+        .modal-content,
+        .modal-header,
+        .modal-title,
+        .modal-body,
+        .modal-footer,
+        .modal-content * {
+            color: black !important;
+        }
+
+        .float-left {
+            float: left;
+            margin-right: 10px;
+            /* Adjust margin as needed */
+        }
+
+        /* CSS for label text color */
+        .form-label {
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Hello, {{ request.user }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                    {% if request.user.username == 'SuperAdmin' %}
+                    <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                    <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                    <a class="dropdown-item" href="/Logout/">Log Out</a>
+                    {% elif request.user.is_superuser %}
+                    <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                    <a class="dropdown-item" href="/Logout/">Log Out</a>
+                    {% else %}
+                    <a class="dropdown-item" href="/Logout/">Log Out</a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handvoer-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>
+                <!-- <li><a href="/Reports-Profile/">Reports</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+            <!-- Form to add advance -->
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="bill_Number" class="form-label">Bill Number</label>
+                    <input type="text" id="bill_Number" name="bill_Number" class="form-control" readonly value="{{bill_master_bill_update.Bill_Master_Bill_Number}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_date" class="form-label">Bill Date</label>
+                    <input type="date" id="bill_date" name="bill_date" class="form-control" readonly value="{{bill_master_bill_update.Bill_Master_Bill_Date |date:'Y-m-d'}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_Guest_Name" class="form-label">Guest Name</label>
+                    <input type="text" id="bill_master_Guest_Name" name="bill_master_Guest_Name" readonly class="form-control" value="{{bill_master_bill_update.Bill_Master_Guest_Name}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_mobile_number" class="form-label">Mobile Number</label>
+                    <input type="text" id="bill_master_mobile_number" name="bill_master_Mobile_Number" readonly class="form-control" value="{{bill_master_bill_update.Bill_Master_Mobile_Number}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="select_company" class="form-label">Select Company</label>
+                    <!-- Hidden input for the company ID to be sent to the server -->
+                    <input type="hidden" id="select_company_id" name="select_company_id" value="{{ bill_master_bill_update.Bill_Master_Bill_Company.id }}">
+                    <!-- Readonly input to display the company name to the user -->
+                    <input type="text" readonly class="form-control" value="{{ bill_master_bill_update.Bill_Master_Bill_Company.Company_Name }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="food_plan" class="form-label">Plan</label>
+                    <input type="text" id="food_plan" name="food_plan" readonly class="form-control" value="{{ bill_master_bill_update.Bill_Master_Hotel_Plan }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_hotel_total_amount" class="form-label">Hotel Total Amount</label>
+                    <input type="text" id="bill_master_hotel_total_amount" name="bill_master_hotel_total_amount" class="form-control" readonly value="{{ bill_master_hotel_total_amount }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_food_total_amount" class="form-label">Food Total Amount</label>
+                    <input type="text" id="bill_master_food_total_amount" name="bill_master_food_total_amount" class="form-control" readonly value="{{ bill_master_food_total_amount }}">
+                </div>
+
+                <!-- Static fields -->
+                <div class="form-group">
+                    <label for="debit_bill_date" class="form-label">Bill Date</label>
+                    <input type="date" id="debit_bill_date" name="debit_bill_date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_debit_hotel_amount" class="form-label">Hotel Amount</label>
+                    <input type="text" id="bill_master_debit_hotel_amount" name="bill_master_debit_hotel_amount" class="form-control" >
+                </div>
+                <div class="form-group">
+                    <label for="bill_master__debit_hotel_mod" class="form-label">Hotel Mode of Payment</label>
+                    <select id="bill_master__debit_hotel_mod" name="bill_master_debit_hotel_mod" class="form-control" required>
+                        <option value="None" disabled selected>Select Mode of Payment</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="UPI">UPI</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_debit_food_amount" class="form-label">Food Amount</label>
+                    <input type="text" id="bill_master_debit_food_amount" name="bill_master_debit_food_amount" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="bill_master_debit_food_mod" class="form-label">Food Mode of Payment</label>
+                    <select id="bill_master_debit_food_mod" name="bill_master_debit_food_mod" class="form-control" required>
+                        <option value="None" disabled selected>Select Mode of Payment</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="UPI">UPI</option>
+                    </select>
+                </div>
+
+                <div id="additional-fields-container">
+                    <!-- Additional fields will be added here dynamically -->
+                </div>
+
+                <button type="button" id="add-more-button" class="btn btn-primary">Add More</button>
+
+                <div class="form-group">
+                    <label for="bill_master_hotel_remaining_balance" class="form-label">Hotel Balance</label>
+                    <input type="text" id="bill_master_hotel_remaining_balance" name="bill_master_hotel_remaining_balance" class="form-control" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_food_remaining_balance" class="form-label">Food Balance</label>
+                    <input type="text" id="bill_master_food_remaining_balance" name="bill_master_food_remaining_balance" class="form-control" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_debit_name" class="form-label">Reference Name</label>
+                    <input type="text" id="bill_master_debit_name" name="bill_master_debit_name" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_debit_number" class="form-label">Reference Mobile Number</label>
+                    <input type="text" id="bill_master_debit_number" name="bill_master_debit_Number" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="bill_master_debit_instruction" class="form-label">Instruction</label>
+                    <input type="text" id="bill_master_debit_instruction" name="bill_master_debit_instruction" class="form-control">
+                </div>
+
+                <input type="submit" value="Submit" class="btn btn-success">
+                <a href="/Bill-Master-Debit-Bill-Profile/" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        © 2024 Easy Hotel Solutions. All right reserved
+    </footer>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const getValueOrZero = (id) => {
+                const element = document.getElementById(id);
+                return element && element.value ? parseFloat(element.value) || 0 : 0;
+            };
+    
+            const updateHotelRemainingBalance = () => {
+                // Fetch the total hotel amount
+                const totalHotelAmount = parseFloat(document.getElementById('bill_master_hotel_total_amount').value) || 0;
+    
+                // Sum of all debit hotel amounts
+                const debitHotelAmounts = [
+                    getValueOrZero('bill_master_debit_hotel_amount'),
+                    getValueOrZero('bill_master_debit_hotel_amount_1'),
+                    getValueOrZero('bill_master_debit_hotel_amount_2'),
+                    getValueOrZero('bill_master_debit_hotel_amount_3'),
+                    getValueOrZero('bill_master_debit_hotel_amount_4')
+                ];
+    
+                const sumDebitHotelAmounts = debitHotelAmounts.reduce((acc, val) => acc + val, 0);
+    
+                // Calculate remaining balance for hotel
+                const remainingHotelBalance = totalHotelAmount - sumDebitHotelAmounts;
+    
+                // Update the remaining balance field for hotel with negative value
+                document.getElementById('bill_master_hotel_remaining_balance').value = (-remainingHotelBalance).toFixed(2);
+            };
+    
+            const updateFoodRemainingBalance = () => {
+                // Fetch the total food amount
+                const totalFoodAmount = parseFloat(document.getElementById('bill_master_food_total_amount').value) || 0;
+    
+                // Sum of all debit food amounts
+                const debitFoodAmounts = [
+                    getValueOrZero('bill_master_debit_food_amount'),
+                    getValueOrZero('bill_master_debit_food_amount_1'),
+                    getValueOrZero('bill_master_debit_food_amount_2'),
+                    getValueOrZero('bill_master_debit_food_amount_3'),
+                    getValueOrZero('bill_master_debit_food_amount_4')
+                ];
+    
+                const sumDebitFoodAmounts = debitFoodAmounts.reduce((acc, val) => acc + val, 0);
+    
+                // Calculate remaining balance for food
+                const remainingFoodBalance = totalFoodAmount - sumDebitFoodAmounts;
+    
+                // Update the remaining balance field for food with negative value
+                document.getElementById('bill_master_food_remaining_balance').value = (-remainingFoodBalance).toFixed(2);
+            };
+    
+            const additionalFieldsContainer = document.getElementById("additional-fields-container");
+    
+            const hotelFieldsToWatch = [
+                'bill_master_hotel_total_amount',
+                'bill_master_debit_hotel_amount'
+            ];
+    
+            const foodFieldsToWatch = [
+                'bill_master_food_total_amount',
+                'bill_master_debit_food_amount'
+            ];
+    
+            // Add event listeners for hotel fields
+            hotelFieldsToWatch.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updateHotelRemainingBalance);
+                }
+            });
+    
+            // Add event listeners for food fields
+            foodFieldsToWatch.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updateFoodRemainingBalance);
+                }
+            });
+    
+            // Event delegation for dynamically added fields (hotel)
+            additionalFieldsContainer.addEventListener('input', (event) => {
+                if (event.target && event.target.matches('input[id^="bill_master_debit_hotel_amount"]')) {
+                    updateHotelRemainingBalance();
+                }
+            });
+    
+            // Event delegation for dynamically added fields (food)
+            additionalFieldsContainer.addEventListener('input', (event) => {
+                if (event.target && event.target.matches('input[id^="bill_master_debit_food_amount"]')) {
+                    updateFoodRemainingBalance();
+                }
+            });
+    
+            // Initial calculations
+            updateHotelRemainingBalance();
+            updateFoodRemainingBalance();
+        });
+    </script>
+    
+    
+    
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get the current date
+            const currentDate = new Date();
+    
+            // Format the date as YYYY-MM-DD
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Adding leading zero if necessary
+            const day = String(currentDate.getDate()).padStart(2, '0'); // Adding leading zero if necessary
+            const formattedDate = `${year}-${month}-${day}`;
+    
+            // Set the value of the input element with id="debit_bill_date"
+            document.getElementById("debit_bill_date").value = formattedDate;
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const addMoreButton = document.getElementById("add-more-button");
+            const additionalFieldsContainer = document.getElementById("additional-fields-container");
+        
+            let fieldIndex = 1;
+        
+            addMoreButton.addEventListener("click", function() {
+                if (fieldIndex <= 4) { // Allow adding up to 4 fields (0 to 3 index)
+                    const newFieldSet = createNewFieldSet(fieldIndex);
+                    additionalFieldsContainer.appendChild(newFieldSet);
+                    fieldIndex++;
+                    manageDeleteButtons(); // Update delete button visibility
+                } else {
+                    addMoreButton.style.display = "none"; // Hide add more button after 4 fields
+                }
+            });
+        
+            additionalFieldsContainer.addEventListener("click", function(event) {
+                const deleteButton = event.target.closest(".delete-button");
+                if (deleteButton) {
+                    // Ask for confirmation before deleting
+                    if (confirm("Are you sure you want to delete this entry?")) {
+                        const fieldSet = deleteButton.closest(".additional-field-set");
+                        if (fieldSet) {
+                            fieldSet.remove();
+                            fieldIndex--;
+                            manageDeleteButtons(); // Update delete button visibility
+                            addMoreButton.style.display = "inline-block"; // Show add more button after deletion
+                        }
+                    }
+                }
+            });
+        
+            function createNewFieldSet(index) {
+                const newFieldSet = document.createElement("div");
+                newFieldSet.classList.add("additional-field-set", "mb-3");
+        
+                newFieldSet.innerHTML = `
+                    <div class="form-group">
+                        <label for="debit_bill_date_${index}" class="form-label">Bill Date</label>
+                        <input type="date" id="debit_bill_date_${index}" name="debit_bill_date_${index}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill_master_debit_hotel_amount_${index}" class="form-label">Hotel Amount</label>
+                        <input type="text" id="bill_master_debit_hotel_amount_${index}" name="bill_master_debit_hotel_amount_${index}" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="bill_master_debit_hotel_mod_${index}" class="form-label">Hotel Mode of Payment</label>
+                        <select id="bill_master_debit_hotel_mod_${index}" name="bill_master_debit_hotel_mod_${index}" class="form-control" required>
+                            <option value="None" disabled selected>Select Mode of Payment</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="UPI">UPI</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill_master_debit_food_amount_${index}" class="form-label">Food Amount</label>
+                        <input type="text" id="bill_master_debit_food_amount_${index}" name="bill_master_debit_food_amount_${index}" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="bill_master_debit_food_mod_${index}" class="form-label">Food Mode of Payment</label>
+                        <select id="bill_master_debit_food_mod_${index}" name="bill_master_debit_food_mod_${index}" class="form-control" required>
+                            <option value="None" disabled selected>Select Mode of Payment</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="UPI">UPI</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-danger delete-button">Delete</button>
+                `;
+        
+                return newFieldSet;
+            }
+        
+            function manageDeleteButtons() {
+                const allDeleteButtons = document.querySelectorAll(".delete-button");
+                allDeleteButtons.forEach(button => {
+                    button.style.display = "none"; // Hide all delete buttons first
+                });
+        
+                if (fieldIndex > 1) { // Show delete button only for the last added field
+                    const lastDeleteButton = allDeleteButtons[fieldIndex - 2]; // -2 because index is zero-based
+                    if (lastDeleteButton) {
+                        lastDeleteButton.style.display = "inline-block";
+                    }
+                }
+            }
+        });
+    </script>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

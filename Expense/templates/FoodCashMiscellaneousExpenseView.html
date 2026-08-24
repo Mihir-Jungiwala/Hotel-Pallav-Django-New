@@ -1,0 +1,268 @@
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="dynamicTitle">A4 Size Bill Receipt</title>
+    <style>
+        /* Basic Styling */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        /* A4 Size Layout */
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            background-color: white;
+            padding: 10mm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        /* Header, Main, and Footer Styling */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        main {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        footer {
+            text-align: center;
+            position: absolute;
+            bottom: 10mm;
+            width: 100%;
+        }
+
+        /* Bill Receipt Styling */
+        .receipt-container {
+            width: 95%;
+            max-width: 1000px;
+            background: #ffffff;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-size: 50px; /* Increased font size to 50px */
+            color: #333;
+            font-weight: bold;
+        }
+
+        .header,
+        .amount-details,
+        .guest-info,
+        .footer,
+        .signature {
+            margin-bottom: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 2px solid #333;
+            padding: 8px;
+            text-align: left;
+        }
+
+        /* Hover effect for table rows */
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            margin-top: 20px;
+        }
+
+        .signature {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 80px;
+            font-size: 19px; /* Increase overall font size */
+        }
+
+        .signature div {
+            text-align: center;
+            flex: 1;
+        }
+
+        .signature p {
+            margin: 0;
+        }
+
+        .signature-line {
+            border-top: 2px solid #333;
+            margin-top: 20px; /* Adjust this value for the desired gap */
+            padding: 5px;
+        }
+
+        .signature-gap {
+            margin-top: 40px; /* This creates space between the two signature lines */
+        }
+
+        /* Thank You Message */
+        .thank-you {
+            margin-top: 40px;
+            font-size: 17px; /* Adjust the font size as needed */
+            text-align: center; /* Center the text */
+            color: #333; /* Color for the message */
+            font-weight: bold; /* Make the text bold */
+        }
+
+        /* Print Settings */
+        @media print {
+            body,
+            html {
+                margin: 0;
+                padding: 0;
+                width: 210mm;
+                height: 297mm;
+            }
+
+            .a4-page {
+                box-shadow: none;
+                width: 100%;
+                height: auto;
+                page-break-after: always;
+            }
+
+            footer {
+                position: static;
+                bottom: 0;
+            }
+
+            @page {
+                size: A4;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="a4-page" id="pdf-content">
+        <header>
+            <h1>Pallav Food</h1>
+        </header>
+
+        <main>
+            <!-- Start of Bill Receipt Section -->
+            <div class="receipt-container">
+                <div class="header">
+                    <div class="left">
+                        <p><strong>Date:</strong> {{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Date|date:"d-M-Y" }}</p>
+                    </div>
+                    <div class="right">
+                        <p><strong>Time:</strong> {{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Time|time:"H:i" }}</p>
+                    </div>
+                </div>
+
+                <div class="guest-info">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <th style="text-align: width: 50%;">Expense Name</th>
+                            <td style="width: 50%;">{{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Expense_Name }}</td>
+                        </tr>
+                   
+                        <tr>
+                            <th style="text-align:  width: 50%;">Amount</th>
+                            <td style="width: 50%;">{{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Amount|intcomma }}/-</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: width: 50%;">Amount in Words</th>
+                            <td style="width: 50%;">{{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Amount_In_Words }}</td>
+                        </tr>
+                    
+                        <tr>
+                            <th style="text-align:  width: 50%;">Instruction</th>
+                            <td style="width: 50%;">{{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Instruction  }}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+
+                <div class="signature">
+                    <div>
+                        <div class="signature-line"></div>
+                        <p>{{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Full_Name }}</p>
+                    </div>
+                    <div class="signature-gap"></div> <!-- This div creates space between the two signatures -->
+                    <div>
+                        <div class="signature-line"></div>
+                        <p>Receiver Signature</p>
+                    </div>
+                </div>
+                 
+
+             
+
+            </div>
+            <!-- End of Bill Receipt Section -->
+        </main>
+    </div>
+
+    <button id="generate-pdf">Generate PDF</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        document.getElementById('generate-pdf').addEventListener('click', function () {
+            const { jsPDF } = window.jspdf;
+
+            const pdf = new jsPDF();
+
+            // Use html method to convert HTML to PDF
+            pdf.html(document.getElementById('pdf-content'), {
+                callback: function (pdf) {
+                    pdf.save('receipt.pdf'); // Save the generated PDF with a filename
+                },
+                x: 10,
+                y: 10
+            });
+        });
+
+        // Set dynamic title based on withdrawer's name
+        const withdrawerName = "{{ food_cash_miscellaneous_expense_view.Miscellaneous_Expenses_Food_Full_Name }}"; // Get withdrawer name
+        document.getElementById("dynamicTitle").textContent = `${withdrawerName}'s Expense Receipt`; // Set dynamic title
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px); /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .content {
+            padding: 20px;
+            font-size: 18px;
+            color: black;
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1px;
+            text-align: center; /* Center align content */
+        }
+        
+        /* Style for the Add User button */
+        .add-user-btn {
+            background-color: #6c757d; /* Grey color */
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            text-decoration: none; /* Remove underline */
+        }
+
+        .add-user-btn:hover {
+            background-color: #6c757d; /* Grey color */
+            color: #fff; /* Change text color on hover */
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Hello, {{ request.user.username }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.username == 'SuperAdmin' %}
+                            <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% elif request.user.is_superuser %}
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% else %}
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handvoer-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>                
+               <!-- <li><a href="/Reports-Profile/">Reports</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+            <div class="content">
+                {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+               
+                <form method="post" >
+                    {% csrf_token %}
+                    <!-- Personal Information -->
+                    <h2>Personal Information</h2>
+                    <div class="form-group">
+                        <label for="company_name" class="form-label">Company Name</label>
+                        <input type="text" id="company_name" name="company_name" class="form-control" value="{{companyprofile.Company_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_address" class="form-label">Company Address</label>
+                        <input type="text" id="company_address" name="company_address" class="form-control"  value="{{companyprofile.Company_Address}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_email" class="form-label">Company Email</label>
+                        <input type="text" id="company_email" name="company_email" class="form-control"  value="{{companyprofile.Company_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_country" class="form-label">Company Country</label>
+                        <input type="text" id="company_country" name="company_country" class="form-control"  value="{{companyprofile.Company_Country}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_pincode" class="form-label">Company Pincode</label>
+                        <input type="text" id="company_pincode" name="company_pincode" class="form-control"  value="{{companyprofile.Company_Pincode}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_nationality" class="form-label">Company Nationality</label>
+                        <input type="text" id="company_nationality" name="company_nationality" class="form-control"  value="{{companyprofile.Company_Nationality}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_mobile_number" class="form-label">Company Mobile Number</label>
+                        <input type="text" id="company_mobile_number" name="company_mobile_number" class="form-control"  value="{{companyprofile.Company_Mobile_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_phone_number" class="form-label">Company Phone Number</label>
+                        <input type="text" id="company_phone_number" name="company_phone_number" class="form-control"  value="{{companyprofile.Company_Phone_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_discount_percentage" class="form-label">Discount Percentage</label>
+                        <input type="text" id="company_discount_percentage" name="company_discount_percentage" class="form-control"  value="{{companyprofile.Company_Discount_Percentage}}">
+                    </div>
+                
+                    <!-- Additional Company Information -->
+                    <h2>Additional Company Information</h2>
+                    <div class="form-group">
+                        <label for="company_instruction" class="form-label">Instructions</label>
+                        <input type="text" id="company_instruction" name="company_instruction" class="form-control"  value="{{companyprofile.Company_Instruction}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_gst_number" class="form-label">Company GST Number</label>
+                        <input type="text" id="company_gst_number" name="company_gst_number" class="form-control"  value="{{companyprofile.Company_GST_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_gst_percentage" class="form-label">Company GST Percentage</label>
+                        <input type="text" id="company_gst_percentage" name="company_gst_percentage" class="form-control"  value="{{companyprofile.Company_GST_Percentage}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_tcs_percentage" class="form-label">Company TCS Percentage</label>
+                        <input type="text" id="company_tcs_percentage" name="company_tcs_percentage" class="form-control"  value="{{companyprofile.Company_TCS_Percentage}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_tds_percentage" class="form-label">Company TDS Percentage</label>
+                        <input type="text" id="company_tds_percentage" name="company_tds_percentage" class="form-control"  value="{{companyprofile.Company_TDS_Percentage}}">
+                    </div>
+                
+                    <!-- Managing Directors Information -->
+                    <h2>Managing Directors Information</h2>
+                    <div class="form-group">
+                        <label for="company_md_one_name" class="form-label">Managing Director 1 Name</label>
+                        <input type="text" id="company_md_one_name" name="company_md_one_name" class="form-control"  value="{{companyprofile.Company_MD_One_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_md_one_email" class="form-label">Managing Director 1 Email</label>
+                        <input type="text" id="company_md_one_email" name="company_md_one_email" class="form-control"  value="{{companyprofile.Company_MD_One_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_md_one_mobile_number" class="form-label">Managing Director 1 Mobile Number</label>
+                        <input type="text" id="company_md_one_mobile_number" name="company_md_one_mobile_number" class="form-control"  value="{{companyprofile.Company_MD_One_Mobile_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_md_second_name" class="form-label">Managing Director 2 Name</label>
+                        <input type="text" id="company_md_second_name" name="company_md_second_name" class="form-control"  value="{{companyprofile.Company_MD_Second_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_md_second_email" class="form-label">Managing Director 2 Email</label>
+                        <input type="text" id="company_md_second_email" name="company_md_second_email" class="form-control"  value="{{companyprofile.Company_MD_Second_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_md_second_mobile_number" class="form-label">Managing Director 2 Mobile Number</label>
+                        <input type="text" id="company_md_second_mobile_number" name="company_md_second_mobile_number" class="form-control"  value="{{companyprofile.Company_MD_Second_Mobile_Number}}">
+                    </div>
+                
+                    <!-- HR Information -->
+                    <h2>HR Information</h2>
+                    <div class="form-group">
+                        <label for="company_hr_head_name" class="form-label">HR Head Name</label>
+                        <input type="text" id="company_hr_head_name" name="company_hr_head_name" class="form-control"  value="{{companyprofile.Company_HR_Head_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_hr_head_email" class="form-label">HR Head Email</label>
+                        <input type="text" id="company_hr_head_email" name="company_hr_head_email" class="form-control"  value="{{companyprofile.Company_HR_Head_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_hr_head_mobile_number" class="form-label">HR Head Mobile Number</label>
+                        <input type="text" id="company_hr_head_mobile_number" name="company_hr_head_mobile_number" class="form-control"  value="{{companyprofile.Company_HR_Head_Mobile_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_assistant_hr_name" class="form-label">Assistant HR Name</label>
+                        <input type="text" id="company_assistant_hr_name" name="company_assistant_hr_name" class="form-control"  value="{{companyprofile.Company_Assitant_HR_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_assistant_hr_email" class="form-label">Assistant HR Email</label>
+                        <input type="text" id="company_assistant_hr_email" name="company_assistant_hr_email" class="form-control"  value="{{companyprofile.Company_Assitant_HR_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_assistant_hr_mobile_number" class="form-label">Assistant HR Mobile Number</label>
+                        <input type="text" id="company_assistant_hr_mobile_number" name="company_assistant_hr_mobile_number" class="form-control"  value="{{companyprofile.Company_Assitant_HR_Mobile_Number}}">
+                    </div>
+                
+                    <!-- Accountant Information -->
+                    <h2>Accountant Information</h2>
+                    <div class="form-group">
+                        <label for="company_accountant_head_name" class="form-label">Accountant Head Name</label>
+                        <input type="text" id="company_accountant_head_name" name="company_accountant_head_name" class="form-control"  value="{{companyprofile.Company_Accountant_Head_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_head_email" class="form-label">Accountant Head Email</label>
+                        <input type="text" id="company_accountant_head_email" name="company_accountant_head_email" class="form-control"  value="{{companyprofile.Company_Accountant_Head_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_head_mobile_number" class="form-label">Accountant Head Mobile Number</label>
+                        <input type="text" id="company_accountant_head_mobile_number" name="company_accountant_head_mobile_number" class="form-control"  value="{{companyprofile.Company_Accountant_Head_Mobile_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_assistant_one_name" class="form-label">Accountant Assistant 1 Name</label>
+                        <input type="text" id="company_accountant_assistant_one_name" name="company_accountant_assistant_one_name" class="form-control"  value="{{companyprofile.Company_Accountant_Assistant_One_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_assistant_one_email" class="form-label">Accountant Assistant 1 Email</label>
+                        <input type="text" id="company_accountant_assistant_one_email" name="company_accountant_assistant_one_email" class="form-control"  value="{{companyprofile.Company_Accountant_Assistant_One_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_assistant_one_mobile_number" class="form-label">Accountant Assistant 1 Mobile Number</label>
+                        <input type="text" id="company_accountant_assistant_one_mobile_number" name="company_accountant_assistant_one_mobile_number" class="form-control"  value="{{companyprofile.Company_Accountant_Assistant_One_Mobile_Number}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_assistant_two_name" class="form-label">Accountant Assistant 2 Name</label>
+                        <input type="text" id="company_accountant_assistant_two_name" name="company_accountant_assistant_two_name" class="form-control"  value="{{companyprofile.Company_Accountant_Assistant_Two_Name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_assistant_two_email" class="form-label">Accountant Assistant 2 Email</label>
+                        <input type="text" id="company_accountant_assistant_two_email" name="company_accountant_assistant_two_email" class="form-control"  value="{{companyprofile.Company_Accountant_Assistant_Two_Email}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_accountant_assistant_two_mobile_number" class="form-label">Accountant Assistant 2 Mobile Number</label>
+                        <input type="text" id="company_accountant_assistant_two_mobile_number" name="company_accountant_assistant_two_mobile_number" class="form-control"  value="{{companyprofile.Company_Accountant_Assistant_Two_Mobile_Number}}">
+                    </div>
+                
+                    <input type="submit" value="Submit" class="btn btn-success">
+                    <a href="/Company-User-Profile/" class="btn btn-secondary">Cancel</a>
+                </form>
+                
+                
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div style="margin: 0 auto;">© 2024 Easy Hotel Solutions. All right reserved</div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

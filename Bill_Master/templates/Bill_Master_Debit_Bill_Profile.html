@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #1a1a1a, #333);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 30px 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info p {
+            font-size: 18px;
+            margin: 0;
+            padding-right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-info p:hover {
+            color: #bbb;
+        }
+
+        .dropdown-menu {
+            background-color: #fff;
+            margin-top: 0;
+            margin-right: -10px;
+            display: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #eee;
+            color: #555;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        nav li {
+            text-align: center;
+            margin: 0 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            color: #fff;
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+        .navbar {
+            background-color: #007bff;
+            max-width: 2200px;
+            margin: 0 auto;
+        }
+
+        .navbar-toggler {
+            border-color: #fff;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+
+        .container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        .content-container {
+            min-height: calc(100vh - 230px); /* Adjust based on footer height */
+            margin: 20px 0;
+            padding: 30px 30px;
+            background: #fff;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .content-container:hover {
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .content {
+            padding: 20px;
+            font-size: 18px;
+            color: black;
+        }
+
+        .btn-success,
+        .btn-danger {
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .role-highlight {
+            background-color: #fff;
+            color: black;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #333, #1a1a1a);
+            color: #fff;
+            padding: 20px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1px;
+            text-align: center; /* Center align content */
+        }
+
+        /* Conditional Background Colors */
+        .bg-success {
+            background-color: #c8e6c9; /* Light green */
+        }
+
+        .bg-danger {
+            background-color: #ffcdd2; /* Light red */
+        }
+
+        /* Style for the Add User button */
+        .add-user-btn {
+            background-color: #6c757d; /* Grey color */
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            text-decoration: none; /* Remove underline */
+        }
+
+        .add-user-btn:hover {
+            background-color: #6c757d; /* Grey color */
+            color: #fff; /* Change text color on hover */
+            text-decoration: none; /* Remove underline on hover */
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <a href="/Dashboard-Profile/" style="text-decoration: none; color: inherit;">Hotel Pallav</a>
+        </div>
+        <div class="user-info">
+            <div class="dropdown">
+                <p id="userDropdown" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Hello, {{ request.user }}
+                </p>
+                <div class="dropdown-menu" aria-labelledby="userDropdown">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.username == 'SuperAdmin' %}
+                            <a class="dropdown-item" href="/admin/" target="_blank">Admin</a>
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% elif request.user.is_superuser %}
+                            <a class="dropdown-item" href="/Registration-User-Profile/">User Profile</a>
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% else %}
+                            <a class="dropdown-item" href="/Logout/">Log Out</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white">
+        <div class="container">
+            <ul>
+                <li><a href="/Dashboard-Profile/">Dashboard</a></li>
+                <li><a href="/Revenue-Profile/">Revenue</a></li>
+                <li><a href="/Expense-Profile/">Expense</a></li>
+                <li><a href="/Shift-Handover-Profile/">Shift Handover </a></li>
+                <li><a href="/Bill-Master-Advance-Profile/">Bill Master</a></li>
+                <li><a href="/Company-User-Profile/">Company Profile</a></li>
+                <li><a href="/Staff--Profile-User-Profile/">Staff Profile</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-container">
+            <div class="content">
+                <p>
+                    <a href="/Bill-Master-Advance-Profile/" class="add-user-btn">Advance</a>
+                    <a href="/Bill-Master-Bill-Profile/" class="add-user-btn">Billing</a>
+                </p>
+                {% if debit_bill_profiles %}
+                <table class="table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Serial</th>
+                            <th>Date</th>
+                            <th>Bill Number</th>
+                            <th>Guest Name</th>
+                            <th>Mobile Number</th>
+                            <th>Hotel Amount</th>
+                            <th>Food Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in debit_bill_profiles %}
+                        <tr class="{% if item.Bill_Master_Balance_Hotel_Amount == 0 and item.Bill_Master_Balance_Food_Amount == 0 %}bg-success{% else %}bg-danger{% endif %}">
+                            <!-- Bill details -->
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.Bill_Master_Bill_Date }}</td>
+                            <td>{{ item.Bill_Master_Bill_Number }}</td>
+                            <td>{{ item.Bill_Master_Guest_Name }}</td>
+                            <td>{{ item.Bill_Master_Mobile_Number }}</td>
+                            <td>{{ item.Bill_Master_Total_Hotel_Amount }}</td>
+                            <td>{{ item.Bill_Master_Total_Food_Amount }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7">
+
+                                 
+                                {% if request.user.is_authenticated %}
+                                {% if request.user.is_superuser  %}
+                                <a href="/Bill-Master-Debit-Bill-Add/{{ item.id }}/" class="btn btn-primary"> Debit Bill</a>
+                                <a href="#" class="btn btn-primary">View</a>                               
+
+                                <form action="/Bill-Master-Debit-Bill-Delete/{{ item.id }}/" method="post" style="display: inline-block;">
+                                    {% csrf_token %}
+                                    <button class="btn btn-danger" type="submit" onclick="return confirm('Are you sure you want to delete this entry?')">Delete</button>
+                                </form> 
+                                {% elif request.user.is_staff %}
+                                <a href="/Bill-Master-Debit-Bill-Add/{{ item.id }}/" class="btn btn-primary"> Debit Bill</a>
+                                
+                                <a href="#" class="btn btn-primary">View</a>
+                                {% else %}
+                                <a href="#" class="btn btn-primary">View</a>
+                                {% endif %}
+                            {% endif %}
+
+                            
+                                
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>No entries found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div style="margin: 0 auto;">© 2024 Easy Hotel Solutions. All right reserved</div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

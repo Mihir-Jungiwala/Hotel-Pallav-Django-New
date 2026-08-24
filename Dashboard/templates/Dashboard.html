@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block mobile_title %}Dashboard{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-8 rv">
+    <div>
+      <h1 class="font-display text-2xl sm:text-3xl font-bold text-pallav-900">Dashboard</h1>
+      <p class="text-sm text-pallav-500 mt-1">Today's cash position across hotel and food.</p>
+    </div>
+    <a href="{% url 'BillMasterDebitBillProfile' %}" class="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pallav-600 to-pallav-800 text-white text-sm font-bold px-5 py-2.5 shadow-lg shadow-pallav-900/15 hover:-translate-y-0.5 transition">
+      Review Debit Bills
+    </a>
+  </div>
+
+  <!-- People snapshot -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="rounded-2xl bg-white ring-1 ring-pallav-100 p-5 shadow-sm flex items-start justify-between rv">
+      <div><div class="text-3xl font-display font-bold text-pallav-800">{{ total_company }}</div><div class="text-xs font-bold uppercase tracking-wide text-pallav-400 mt-1">Companies</div></div>
+      <span class="w-10 h-10 rounded-xl bg-pallav-50 text-pallav-700 flex items-center justify-center shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V5a1 1 0 011-1h8a1 1 0 011 1v16M14 21h6V10l-6-4M8 7h.01M8 11h.01M8 15h.01"/></svg></span>
+    </div>
+    <div class="rounded-2xl bg-white ring-1 ring-pallav-100 p-5 shadow-sm flex items-start justify-between rv d1">
+      <div><div class="text-3xl font-display font-bold text-pallav-800">{{ total_staff }}</div><div class="text-xs font-bold uppercase tracking-wide text-pallav-400 mt-1">Staff</div></div>
+      <span class="w-10 h-10 rounded-xl bg-pallav-50 text-pallav-700 flex items-center justify-center shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.6 19.5c0-3.3 2.9-5.7 6.4-5.7s6.4 2.4 6.4 5.7M16 8.5a3 3 0 110 6"/></svg></span>
+    </div>
+    <a href="{% url 'BillMasterDebitBillProfile' %}" class="rounded-2xl bg-white ring-1 ring-pallav-100 p-5 shadow-sm flex items-start justify-between rv d2 hover:-translate-y-0.5 hover:shadow-md transition">
+      <div><div class="text-3xl font-display font-bold text-amber-600">{{ total_debit_hotel_bills }}</div><div class="text-xs font-bold uppercase tracking-wide text-pallav-400 mt-1">Hotel Debit Bills</div></div>
+      <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2v-17z"/><path d="M9 8h6M9 12h6"/></svg></span>
+    </a>
+    <a href="{% url 'BillMasterDebitBillProfile' %}" class="rounded-2xl bg-white ring-1 ring-pallav-100 p-5 shadow-sm flex items-start justify-between rv d3 hover:-translate-y-0.5 hover:shadow-md transition">
+      <div><div class="text-3xl font-display font-bold text-amber-600">{{ total_debit_food_bills }}</div><div class="text-xs font-bold uppercase tracking-wide text-pallav-400 mt-1">Food Debit Bills</div></div>
+      <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2v-17z"/><path d="M9 8h6M9 12h6"/></svg></span>
+    </a>
+  </div>
+
+  <!-- Cash position: Hotel + Food -->
+  <div class="grid lg:grid-cols-2 gap-4 mb-6">
+    <div class="rounded-2xl bg-gradient-to-br from-pallav-600 to-pallav-900 text-white p-6 shadow-lg relative overflow-hidden rv">
+      <div class="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-white/5"></div>
+      <div class="relative">
+        <div class="flex items-center gap-2 text-pallav-200 text-xs font-bold uppercase tracking-wide mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 17l6-6 4 4 8-8"/></svg>
+          Hotel Cash — Today
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div><div class="text-xl font-display font-bold">₹{{ total_hotel_income }}</div><div class="text-[11px] text-pallav-200 mt-0.5">Income</div></div>
+          <div><div class="text-xl font-display font-bold">₹{{ total_hotel_expenses }}</div><div class="text-[11px] text-pallav-200 mt-0.5">Expenses</div></div>
+          <div><div class="text-xl font-display font-bold text-gold-300">₹{{ hotel_balance }}</div><div class="text-[11px] text-pallav-200 mt-0.5">Balance</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-gold-600 to-gold-800 text-white p-6 shadow-lg relative overflow-hidden rv d1">
+      <div class="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-white/5"></div>
+      <div class="relative">
+        <div class="flex items-center gap-2 text-gold-100 text-xs font-bold uppercase tracking-wide mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 17l6-6 4 4 8-8"/></svg>
+          Food Cash — Today
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div><div class="text-xl font-display font-bold">₹{{ total_food_income }}</div><div class="text-[11px] text-gold-100 mt-0.5">Income</div></div>
+          <div><div class="text-xl font-display font-bold">₹{{ total_food_expenses }}</div><div class="text-[11px] text-gold-100 mt-0.5">Expenses</div></div>
+          <div><div class="text-xl font-display font-bold">₹{{ food_balance }}</div><div class="text-[11px] text-gold-100 mt-0.5">Balance</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest shift handover -->
+  <div class="rounded-2xl bg-white ring-1 ring-pallav-100 shadow-sm overflow-hidden rv">
+    <div class="px-6 py-4 border-b border-pallav-100 flex items-center justify-between">
+      <h2 class="font-display font-bold text-lg text-pallav-900">Latest Shift Handover</h2>
+      <a href="{% url 'ShiftHandoverProfile' %}" class="text-xs font-bold text-pallav-600 hover:text-pallav-800">View all &rarr;</a>
+    </div>
+    {% if shift_handover %}
+    <div class="p-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 text-sm">
+      <div><div class="text-[11px] font-bold uppercase tracking-wide text-pallav-400">Date</div><div class="font-semibold text-pallav-900 mt-0.5">{{ shift_handover.Shift_Handover_Date }}</div></div>
+      <div><div class="text-[11px] font-bold uppercase tracking-wide text-pallav-400">Time</div><div class="font-semibold text-pallav-900 mt-0.5">{{ shift_handover.Shift_Handover_Time }}</div></div>
+      <div><div class="text-[11px] font-bold uppercase tracking-wide text-pallav-400">Handed over by</div><div class="font-semibold text-pallav-900 mt-0.5">{{ shift_handover.Shift_Handover_Username }}</div></div>
+      <div><div class="text-[11px] font-bold uppercase tracking-wide text-pallav-400">Shift</div><div class="font-semibold text-pallav-900 mt-0.5">{{ shift_handover.Shift_Handover_Shift }}</div></div>
+    </div>
+    <div class="px-6 pb-6 space-y-1.5 text-sm text-pallav-600">
+      {% if shift_handover.Shift_Handover_message_One %}<p>{{ shift_handover.Shift_Handover_message_One }}</p>{% endif %}
+      {% if shift_handover.Shift_Handover_message_Two %}<p>{{ shift_handover.Shift_Handover_message_Two }}</p>{% endif %}
+      {% if shift_handover.Shift_Handover_message_Three %}<p>{{ shift_handover.Shift_Handover_message_Three }}</p>{% endif %}
+      {% if shift_handover.Shift_Handover_message_Four %}<p>{{ shift_handover.Shift_Handover_message_Four }}</p>{% endif %}
+      {% if shift_handover.Shift_Handover_message_Five %}<p>{{ shift_handover.Shift_Handover_message_Five }}</p>{% endif %}
+      {% if shift_handover.Shift_Handover_Special_Instruction %}
+        <p class="font-semibold text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-2 inline-block">{{ shift_handover.Shift_Handover_Special_Instruction }}</p>
+      {% endif %}
+    </div>
+    <div class="px-6 pb-6">
+      <span class="inline-flex items-center gap-2 rounded-xl bg-pallav-50 text-pallav-800 font-bold text-sm px-4 py-2">
+        Total counted: ₹{{ shift_handover.Shift_Handover_Total }}
+      </span>
+    </div>
+    {% else %}
+    <div class="px-6 py-10 text-center text-pallav-400 text-sm">No shift handover recorded yet.</div>
+    {% endif %}
+  </div>
+{% endblock %}
