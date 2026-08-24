@@ -1,6 +1,7 @@
 arabic-reshaper==3.0.0
 asgiref==3.8.1
 asn1crypto==1.5.1
+boto3==1.35.36
 certifi==2025.1.31
 cffi==1.17.1
 chardet==5.2.0
@@ -13,12 +14,20 @@ diff-match-patch==20241021
 Django==5.1.5
 django-import-export==4.3.5
 django-simple-history==3.8.0
+# Optional S3-compatible media storage — only used when DJANGO_USE_S3=True
+# (see Main/settings.py). Harmless to keep installed even when unused.
+django-storages==1.14.4
+gunicorn==23.0.0
 html5lib==1.1
 idna==3.10
 import-export==0.3.1
 lxml==5.3.0
 oscrypto==1.3.0
 pillow==11.1.0
+# Optional Postgres driver — only used when DJANGO_DB_ENGINE points at
+# django.db.backends.postgresql (see Main/settings.py). SQLite needs no
+# driver, so this is a no-op unless a production DB is configured.
+psycopg2-binary==2.9.10
 pycparser==2.22
 pyHanko==0.25.3
 pyhanko-certvalidator==0.26.5
@@ -39,4 +48,7 @@ tzlocal==5.2
 uritools==4.0.3
 urllib3==2.3.0
 webencodings==0.5.1
+# Serves collected static files from the WSGI process in production —
+# see the whitenoise middleware/STORAGES config in Main/settings.py.
+whitenoise==6.8.2
 xhtml2pdf==0.2.16

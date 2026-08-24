@@ -1056,3 +1056,69 @@ reasoning.
 
 ---
 
+## Deployment readiness pass
+
+After the app-by-app hardening above, a separate pass closed the gap
+between "the code is correct" and "you can actually put this on the
+internet." None of this changes application behavior for an existing
+`DJANGO_DEBUG=True` deployment — it's additive, opt-in infrastructure.
+
+### 🔒 `DEBUG` now fails safe
+
+`DJANGO_DEBUG` unset previously defaulted to `DEBUG=True`. Flipped to
+default `DEBUG=False` — an unset env var now means the *safer* posture
+(no stack traces exposed, secure cookies, HSTS, etc. all on), not the
+more dangerous one. **This is a real behavior change**: local development
+must now explicitly set `DJANGO_DEBUG=True` (documented in the new
+`.env.example`) — previously it worked with no env vars set at all.
+
+### ⚙️ Production WSGI server + static file serving
+
+- Added `gunicorn` to `requirements.txt` and a `Procfile` (`web: gunicorn
+  Main.wsgi:application ...`, plus a `release:` line that runs migrations
+  automatically on platforms that support a release phase). Previously
+  only Django's dev server (`manage.py runserver`, not meant for real
+  traffic) was available.
+- Added `whitenoise`: middleware (right after `SecurityMiddleware`) plus a
+  `STORAGES['staticfiles']` backend
+  (`CompressedManifestStaticFilesStorage`) so `collectstatic` output is
+  actually served, compressed, with cache headers — from the WSGI process
+  itself, with no separate nginx/CDN static config required to go live.
+
+### ⚙️ Optional Postgres + S3 media storage (both off by default)
+
+- Added `psycopg2-binary` to `requirements.txt` so the `DJANGO_DB_ENGINE`
+  env var (already supported in `settings.py` before this pass, but with
+  no driver installed to actually use it) works out of the box for
+  Postgres.
+- Added optional S3-compatible media storage (`django-storages` +
+  `boto3`), gated behind `DJANGO_USE_S3=True` plus `AWS_*` env vars,
+  defaulting to local-disk storage when unset. Flagged clearly in
+  `DEPLOYMENT.md`: uploaded files (staff photos, resumes, invoice scans)
+  are lost on every deploy/restart on an ephemeral filesystem — this
+  needs an actual bucket provisioned before it matters, which is a
+  deployment-time decision this codebase can't make for you.
+
+### 📝 `.env.example` + `DEPLOYMENT.md`
+
+New files documenting every environment variable `settings.py` reads and
+the exact step-by-step deploy sequence (install deps → migrate →
+collectstatic → create admin → start gunicorn → verify). `DEPLOYMENT.md`
+explicitly calls out what this repo does *not* do: provision a database,
+bucket, domain, or TLS cert; configure a reverse proxy; set up backups or
+monitoring — and repeats the standing PDF-generation caveat (verified via
+template rendering only, not an actual generated PDF, due to a sandbox
+dependency issue unrelated to this codebase) as an explicit pre-launch
+checklist item.
+
+**Verification:** `manage.py check` and `manage.py check --deploy` both
+clean (the only `--deploy` warning is the expected one about the
+fallback dev `SECRET_KEY`, which disappears once `DJANGO_SECRET_KEY` is
+set per `DEPLOYMENT.md`). `collectstatic` succeeds — 131 static files
+copied and post-processed by whitenoise with no errors. The app was
+booted under `gunicorn` directly (not `runserver`) and answered a real
+HTTP request with 200. Full test suite re-run one more time with the new
+settings loaded: still 114/114 passing.
+
+---
+

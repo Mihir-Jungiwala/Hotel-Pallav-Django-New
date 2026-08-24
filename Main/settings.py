@@ -30,7 +30,10 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+# Fails safe: an unset DJANGO_DEBUG now means DEBUG=False (production
+# posture) instead of DEBUG=True. Local development must explicitly set
+# DJANGO_DEBUG=True — see .env.example.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
 if DEBUG and not ALLOWED_HOSTS:
@@ -86,6 +89,11 @@ INSTALLED_APPS = EXTERNAL_APPS + INSTALLED_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves collected static files directly from the WSGI process (with
+    # compression + far-future cache headers) so a deployment doesn't need
+    # a separate nginx/CDN static-file config to go live. Must sit right
+    # after SecurityMiddleware, before everything else.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -213,6 +221,36 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # collectstatic must never sweep guest documents into the static bundle.
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+# Optional S3-compatible object storage for MEDIA (staff photos, resumes,
+# invoice scans). Off by default — files are written to MEDIA_ROOT on local
+# disk, which is fine for a single persistent server but is LOST on every
+# deploy/restart on an ephemeral filesystem (most PaaS/containers). Set
+# DJANGO_USE_S3=True plus the AWS_* variables below to switch to a bucket;
+# requires an actual bucket to be provisioned first (deployment-time
+# decision, not something this codebase can do on its own).
+if os.environ.get('DJANGO_USE_S3', 'False') == 'True':
+    INSTALLED_APPS.append('storages')
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3.S3Storage'}
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', '')
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN', '')
+    AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '') or None
+    AWS_DEFAULT_ACL = None  # bucket policy controls access, not per-object ACLs
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/' if AWS_S3_CUSTOM_DOMAIN else f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
 
 
 # Logging
