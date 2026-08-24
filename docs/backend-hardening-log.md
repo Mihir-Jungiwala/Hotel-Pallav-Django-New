@@ -547,3 +547,91 @@ through the full `render_to_pdf()` call). Full cross-app smoke test still
 
 ---
 
+## Revenue app — full pass
+
+### 🐛 Critical, confirmed: money stored as free text silently corrupted the Dashboard's revenue totals
+
+`Deposite_Hotel_Amount` and `Deposite_Food_Amount` were `CharField(max_length=50)`
+— and `Dashboard/views.py` runs `Sum('Deposite_Hotel_Amount')` /
+`Sum('Deposite_Food_Amount')` directly over them for the dashboard's
+revenue figures. Confirmed directly: created two hotel deposits, `'1,500'`
+and `'500'` (a comma-formatted amount — an entirely normal way to type
+money, especially with Indian thousands-separator conventions) —
+`Sum()` returned **501**, not 2000. SQLite's loose typing parses only the
+numeric *prefix* of a text value before the first non-numeric character,
+so `'1,500'` contributed `1`, not `1500`, to the sum. On a stricter
+production database engine (Postgres/MySQL) the same query would likely
+have raised a hard error instead of silently returning a wrong number —
+either way, this was never safe.
+
+This is a data-modeling problem, not a narrow view-level bug, so it's
+fixed at the model level: `Deposite_Hotel_Amount`/`Deposite_Food_Amount`
+are now `DecimalField(max_digits=12, decimal_places=2)`. Two migrations:
+`0006_normalize_amount_text_before_decimal` (a data migration that strips
+commas/whitespace from every existing value first, defaulting anything
+still unparseable to `'0'` rather than blocking the schema change) then
+`0007_...` (the actual `AlterField` to `DecimalField`). Existing preview
+data (`'12500'`, `'500'`) converted cleanly to `Decimal('12500.00')` /
+`Decimal('500.00')`.
+
+The views now parse submitted amounts through `_parse_amount()`, which
+still *accepts* a comma-formatted amount (stripping it before parsing —
+no reason to reject normal typing) but always stores a clean `Decimal`,
+so `Sum()` over the column is arithmetically correct by construction
+going forward, not just for the values that happen not to contain a
+comma.
+
+### 🐛 Confirmed: the actual owner of a deposit could never delete their own record
+
+Both delete views checked `hotel_cash_profile.Deposite_Hotel_Username !=
+request.user.username` — comparing a `User` model instance
+(`Deposite_Hotel_Username` is a ForeignKey) to a plain string. A `User`
+instance is never `==` to a string, so this comparison was always `True`
+regardless of actual ownership, meaning the "not authorized" branch
+always fired for anyone whose username wasn't literally "SuperAdmin" or
+"Admin" — **the true owner of a deposit could never delete their own
+entry.** Confirmed directly: logged in as the actual owner, POSTed the
+delete, record remained. Fixed by comparing `User` to `User`
+(`hotel_cash_profile.Deposite_Hotel_Username == request.user`).
+
+### 🔒 Same "readonly is cosmetic" impersonation gap as Shift_Handover
+
+Both deposit forms pre-fill a readonly `username` field with
+`request.user.username` for display; the views read it from
+`request.POST` anyway. Fixed the same way as Shift_Handover: the record
+is always attributed to `request.user`, the POSTed username is no longer
+read.
+
+### 🐛 Confirmed: a blank submitted time crashed the request
+
+`Deposite_Hotel_Time`/`Deposite_Food_Time` are non-nullable `TimeField`s;
+the views passed `request.POST.get('..._time', '')` straight through.
+Confirmed directly: `Hotel_Cash_Deposite.objects.create(...,
+Deposite_Hotel_Time='')` raises `ValidationError` at save time. The form
+auto-fills this field via JS on page load, so it's normally unreachable
+from the real UI — but a direct POST (or a JS-disabled browser) hit it.
+Now validated up front with a friendly message instead of a raw crash.
+
+### 🔒 Silent failure replaced with real feedback; raw exceptions no longer shown
+
+Both deposit views caught exceptions with a bare `print(e)` and no
+`messages.error()` — a failed submission silently reloaded a blank form.
+Both delete views' non-POST branch rendered `confirm_delete.html`, a
+template that has never existed in either app (same class of gap noted
+for `update_user_role.html` in the Authentication pass) — always fell
+through to the generic error page. Since this branch is unreachable from
+the UI (both delete actions are POST-only forms) fixing it changes no
+visible behavior; replaced with a proper redirect + message instead of
+leaving a reference to a nonexistent template in place.
+
+**Verification:** `manage.py check` clean; both migrations applied
+cleanly to the seeded preview DB (existing amounts converted correctly);
+11 tests in `Revenue/tests.py` covering the `Sum()` corruption
+reproduction and fix, the ownership-comparison bug reproduction and fix,
+the impersonation fix, the blank-time crash reproduction and fix, and the
+delete permission matrix (owner/non-owner/SuperAdmin/GET-doesn't-crash).
+PDF receipt templates verified via direct rendering. Full cross-app smoke
+test still 200s throughout.
+
+---
+
