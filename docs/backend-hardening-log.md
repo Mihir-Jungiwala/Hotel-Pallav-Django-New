@@ -374,3 +374,88 @@ throughout.
 
 ---
 
+## Staff_Profile app — full pass
+
+### 🐛 Confirmed crash: any GET request to Delete or Pause/Unpause → hard 500
+
+Same pattern as Company's delete bug: `Staff__Profile_User_Delete` only
+had a body inside `if request.method == 'POST':`, no `else`, no trailing
+return. Reproduced directly: `GET /Staff--Profile-User-Delete/<id>/`
+raised `ValueError: ... didn't return an HttpResponse object. It
+returned None instead.` `User_Profile_Pause_Unpause` didn't crash (it has
+an unconditional `return redirect(...)` after the try/except, outside the
+POST check) but silently no-op'd on GET with no feedback; given
+`Staff__Profile_User_Delete` needed an explicit non-POST branch anyway,
+added the same one to `User_Profile_Pause_Unpause` for consistency and a
+real "Invalid request" message instead of a silent no-op.
+
+### 🐛 Confirmed crash: a non-numeric or unset-looking salary → hard 500
+
+`User_Salary` is an `IntegerField`; the view passed the raw POST string
+straight through to `.create()`/`.save()`. Reproduced directly against a
+real row: `User_Profile.objects.create(User_Salary='not-a-number')`
+raises `ValueError: Field 'User_Salary' expected a number but got
+'not-a-number'.` — uncaught by the surrounding `except Exception`
+correctly catching the crash and showing an error page, but that meant
+*any* typo in the salary field on Add or Update always dumped the user to
+a generic error page. Now validated as a non-negative integer before
+touching the database, with a specific message on failure.
+
+### 🐛 Updating any field silently deleted the staff member's photo/documents/resume — behavior change, called out explicitly
+
+This is the most consequential fix in this app's pass, and unlike
+everything else in this log it's a **behavior change on a working path**,
+not just a crash fix — read carefully.
+
+The Update view always did `image = request.FILES.get('image', None)`
+then unconditionally `queryset.User_Image = image`. An HTML file input
+that the user doesn't touch submits nothing, so `request.FILES.get(...)`
+returns `None` on every update where the photo/front-ID/back-ID/resume
+wasn't re-selected — and assigning `None` to a `FileField` clears it.
+**In the original app, editing a staff member's job title (or any other
+single field) deletes their profile photo and both ID document images
+and their resume unless all four files are re-uploaded on every single
+save.** Confirmed directly: uploaded a photo, updated an unrelated field
+without re-attaching it, and the photo was gone.
+
+Fixed: each file field is now only overwritten when a new file is
+actually present in the request; otherwise the existing file is left
+alone. Confirmed the reverse case still works too — re-uploading a new
+photo does replace the old one.
+
+**Why this is called out this prominently:** if this repo has any
+existing staff profiles with photos/documents that were uploaded once
+and have survived any subsequent edit, this fix doesn't touch them. But
+if the deployed instance has been hit by this bug already (any profile
+where a field was edited after the photo was set), those files are
+already gone from the *old* app and this fix only prevents it from
+happening again going forward — it cannot recover files that were
+already wiped before this pass. Worth a quick manual check of whether any
+currently-live staff profiles are missing photos/documents that should be
+there.
+
+### 🔒 Basic validation added
+
+Full name is now required (previously: no check — an entirely blank
+profile could be created). Email format validated via
+`validate_email`. Salary validated as a non-negative integer (see
+above). Uploaded images capped at 5MB and the resume PDF at 10MB —
+previously no size limit at all on any of the four file uploads, so a
+single request could write an arbitrarily large file to disk.
+
+### Also: de-duplication
+
+Add and Update had ~20 near-identical `request.POST.get(...)` lines each;
+collapsed into shared `_extract_staff_fields()` / `_extract_staff_files()`
+/ `_validate_staff_fields()`, used by both views — the same pattern used
+for Company in this pass.
+
+**Verification:** `manage.py check` clean; 17 tests in
+`Staff_Profile/tests.py`, including direct reproductions of both crashes
+and the file-wipe bug before their fixes (with an explicit test that a
+photo *does* still get replaced when a new one is uploaded, so the fix
+isn't just "never touch files again"). Full cross-app smoke test still
+200s throughout.
+
+---
+
