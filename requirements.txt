@@ -36,6 +36,9 @@ pyHanko==0.25.3
 pyhanko-certvalidator==0.26.5
 pypdf==5.2.0
 python-bidi==0.6.3
+# Loads a local .env file for manage.py runserver so local dev doesn't
+# require setting shell environment variables by hand — see manage.py.
+python-dotenv==1.2.3
 pytz==2025.1
 PyYAML==6.0.2
 qrcode==8.0

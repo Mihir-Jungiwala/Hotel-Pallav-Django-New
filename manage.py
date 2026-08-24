@@ -6,6 +6,17 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # Load a local .env file if present (e.g. DJANGO_DEBUG=True for local
+    # development) so running the app doesn't require setting shell
+    # environment variables by hand — cross-platform, unlike shell-specific
+    # `export`/`set`/`$env:` syntax. No-op in production, where real
+    # environment variables are set directly by the host.
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Main.settings')
     try:
         from django.core.management import execute_from_command_line
